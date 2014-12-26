@@ -1,0 +1,51 @@
+#!/bin/bash
+umask 077
+
+COMMAND=$1
+CACHE_DIR=`(cd $2 && pwd)`
+EXCLUDE_PATTERN=$3
+
+# aufs mountpoint
+AUFS_ROOT=/root-aufs
+
+CPRSYNC="rsync --delete -ax --progress -h --inplace --checksum --no-whole-file"
+
+mountpoint $AUFS_ROOT || exit
+
+clean() {
+    if [ -e $CACHE_DIR.backup ]; then
+	echo "backup folder exist"
+	echo "mv $CACHE_DIR.backup $CACHE_DIR"
+	for file in $EXCLUDE_PATTERN
+	do
+	    echo "rm $CACHE_DIR $file"
+	    find $CACHE_DIR/ -path "$file" -exec rm -f {} \;
+	done
+	$CPRSYNC $CACHE_DIR/ $CACHE_DIR.backup/
+	rm -f $CACHE_DIR
+	mv $CACHE_DIR.backup $CACHE_DIR
+	rm -rf $AUFS_ROOT/$CACHE_DIR.backup
+    fi
+}
+
+echo "$0"
+
+if [ -e $CACHE_DIR ] && [ -h $CACHE_DIR ]; then
+    echo "another $COMMAND is running"
+    $COMMAND
+else
+    trap clean INT EXIT TERM
+
+    echo "opening $COMMAND"
+    clean
+
+    echo "mv $CACHE_DIR $CACHE_DIR.backup"
+    echo
+    mv $CACHE_DIR $CACHE_DIR.backup
+    ln -s $AUFS_ROOT/$CACHE_DIR.backup $CACHE_DIR
+
+    $COMMAND
+    
+    echo
+    clean
+fi

@@ -1,0 +1,55 @@
+#!/bin/bash
+umask 077
+
+COMMAND=$1
+CACHE_DIR=`(cd $2 && pwd)`
+EXCLUDE_PATTERN=$3
+
+DIR=/dev/shm/$CACHE_DIR
+CPRSYNC="rsync --delete -ax --progress -h --inplace --checksum --no-whole-file"
+
+clean() {
+    if [ -e $CACHE_DIR.backup ]; then
+	echo "backup folder exist"
+	echo "mv $CACHE_DIR.backup $CACHE_DIR"
+	for file in $EXCLUDE_PATTERN
+	do
+	    echo "rm $CACHE_DIR $file"
+	    find $CACHE_DIR/ -path "$file" -exec rm -f {} \;
+	done
+	rm -f $CACHE_DIR
+	mv $CACHE_DIR.backup $CACHE_DIR
+    fi
+
+    if [ -d $DIR ]; then
+	echo "sync $DIR/ $CACHE_DIR/"
+	$CPRSYNC $DIR/ $CACHE_DIR/
+	rm -rf $DIR
+    fi
+}
+
+echo "$0"
+
+if [ -e $CACHE_DIR ] && [ -h $CACHE_DIR ]; then
+    echo "another $COMMAND is running"
+    $COMMAND
+else
+    trap clean INT EXIT TERM
+
+    echo "opening $COMMAND"
+    clean
+
+    mkdir -p $DIR
+
+    echo "cp $CACHE_DIR/ $DIR"
+    $CPRSYNC $CACHE_DIR/ $DIR/
+
+    echo ""
+    mv $CACHE_DIR $CACHE_DIR.backup
+    ln -s $DIR $CACHE_DIR
+
+    $COMMAND
+
+    echo
+    clean
+fi

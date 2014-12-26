@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ "$1" != "" ]; then
+    echo "parameters not supported"
+    echo "use /usr/bin/firefox $@"
+    exit 1
+fi
+
+run_with_aufs_ram_cache /usr/bin/firefox ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*"

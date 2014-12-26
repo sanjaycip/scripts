@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ -L $2 ]; then # sembolik link varsa
+	rm -i $2
+fi
+
+if [ -e $2 ]; then # dosya varsa
+	echo "file exists and not symlink: $2"
+	exit
+fi
+
+FILE_NAME=$1
+DIR_NAME=`readlink -f $2`
+DIR_NAME_SHA1=`echo $DIR_NAME | sha1sum | head -c 40`
+TMP_DIR="${TMPMNT_DIR}/`echo "\`pwd\`/$DIR_NAME" | sha1sum | head -c 40`"
+
+if [ "$1" == "-u" ]; then
+	echo "umount $DIR_NAME"
+	fusermount -u $TMP_DIR
+	rm -rf $TMP_DIR
+	exit
+fi
+
+ARCHIVEMOUNT_RO="-o ro"
+if [ "$3" == "rw" ]; then
+    ARCHIVEMOUNT_RO=""
+fi
+
+echo "mount $FILE_NAME $DIR_NAME"
+echo "archivemount $ARCHIVEMOUNT_RO $FILE_NAME $TMP_DIR"
+mkdir $TMP_DIR
+archivemount $ARCHIVEMOUNT_RO $FILE_NAME $TMP_DIR
+ln -s $TMP_DIR $DIR_NAME

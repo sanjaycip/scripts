@@ -1,0 +1,39 @@
+#!/usr/bin/env python2
+import sys, os
+
+dev_mounts = {}
+fs_mounts = []
+
+def umount(info):
+    dev, mount_point, fstype, flags = info
+    assert dev in dev_mounts
+
+    print "umount", mount_point
+    dev_mounts[dev] -= 1
+    if dev_mounts[dev] == 0:
+        del dev_mounts[dev]
+        if dev.startswith("/dev/dm-"):
+            print "cryptsetup luksClose", dev
+
+def find_dev_mounts():
+    for line in open("/proc/mounts"):
+        dev, mount_point, fstype, flags, _, _ = line.split()
+        dev = os.path.realpath(dev)
+        if dev in dev_mounts:
+            dev_mounts[dev] += 1
+        else:
+            dev_mounts[dev] = 1
+        fs_mounts.append((dev, mount_point, fstype, flags))
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print "usage:   umountall directory"
+        print "         umountall directory | sh"
+        exit(1)
+    directory = os.path.abspath(sys.argv[1])
+    find_dev_mounts()
+
+    fs_mounts.sort(key=lambda x: len(x[1]), reverse=True)
+    for info in fs_mounts:
+        if info[1].startswith(directory):
+            umount(info)

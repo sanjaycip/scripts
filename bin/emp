@@ -1,0 +1,15 @@
+#!/bin/bash
+
+EMACS='emacs -nw --no-splash -q -l ~/.emacs.d/emacs-configuration/init-basic.el'
+
+if [[ -s $1 ]] ; then
+    $EMACS $1
+else
+    FILE=/tmp/emacs_pipe_$$;
+    trap "rm -f $FILE" INT TERM EXIT
+    cat /dev/stdin > $FILE
+    if [[ -s $FILE ]] ; then
+	$EMACS $FILE < /dev/tty;
+    fi;
+    rm -f $FILE;
+fi;

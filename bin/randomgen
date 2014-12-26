@@ -1,0 +1,12 @@
+#!/bin/sh
+COUNT=$1
+
+if [ -z "$COUNT" ]; then
+	openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/urandom bs=128 count=1 2>/dev/null | base64)" -nosalt < /dev/zero | pv -pterb
+
+else
+#	openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/urandom bs=128 count=1 2>/dev/null | base64)" -nosalt < /dev/zero | pv -pterb -s $COUNT | head -c $COUNT
+	head -c $COUNT /dev/zero | openssl enc -aes-256-ctr -pass pass:"$(dd if=/dev/urandom bs=128 count=1 2>/dev/null | base64)" -nosalt | pv -pterb -s $COUNT
+
+fi
+

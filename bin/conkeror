@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ "$1" != "" ]; then
+    echo "parameters not supported"
+    echo "use /usr/bin/conkeror $@"
+    exit 1
+fi
+
+export GTK2_RC_FILES=~/.conkerorrc/gtkrc-2.0.conkeror
+run_with_aufs_ram_cache /usr/bin/conkeror ~/.conkeror.mozdev.org "*/conkeror/*.default/adblockplus/elemhide.css*"

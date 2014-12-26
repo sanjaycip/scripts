@@ -1,0 +1,75 @@
+#!/bin/bash
+
+clean() {
+	rm -f dhcpd.conf.$$
+	rm -f hostapd.conf.$$
+	rm -f dhcpd.pid.$$
+	stty echo
+}
+
+close() {
+	if [ -n "$HOSTAPD_PID" ]; then kill -9 $HOSTAPD_PID; fi
+	if [ -n "$DHCPD_PID" ]; then kill -9 $DHCPD_PID; fi
+}
+
+trap "clean; close;" SIGTERM EXIT
+
+INTERFACE=$1
+
+if [ -z "$INTERFACE" ]; then
+	echo "interface girilmedi";
+	exit;
+fi
+
+echo -n "ssid:"
+read SSID
+
+echo -n "password:"
+read -s PASSWORD
+
+ifconfig $INTERFACE 192.168.2.3 netmask 255.255.255.0 up
+
+echo "interface=$INTERFACE
+driver=nl80211
+ssid=$SSID
+wmm_enabled=0
+wpa=1
+wpa_passphrase=$PASSWORD
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+auth_algs=1
+macaddr_acl=0
+channel=7
+hw_mode=g
+ieee80211n=1
+" > hostapd.conf.$$
+
+hostapd hostapd.conf.$$ &
+HOSTAPD_PID=$!
+
+sleep 4
+
+echo "ddns-update-style none;
+default-lease-time 600;
+max-lease-time 7200;
+log-facility local7;
+option domain-name-servers 8.8.8.8, 4.2.2.2;
+
+subnet 192.168.2.0 netmask 255.255.255.0 {
+	  range dynamic-bootp 192.168.2.50 192.168.2.60;
+	  option broadcast-address 192.168.2.255;
+	  option routers 192.168.2.3;
+	  option host-name \"pxe_client_2\";
+}
+" > dhcpd.conf.$$
+
+/usr/sbin/dhcpd -cf dhcpd.conf.$$ -pf dhcpd.pid.$$ $INTERFACE
+
+DHCPD_PID=`cat dhcpd.pid.$$`
+
+sleep 1
+clean
+
+wait $HOSTAPD_PID $DHCPD_PID
+close

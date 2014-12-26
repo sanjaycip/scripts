@@ -1,0 +1,14 @@
+#!/bin/sh
+dd $@ &
+
+sleep 0.1
+pid=$!
+sleep 0.1
+trap "kill -9 $pid; exit 0" INT TERM EXIT
+
+while [ -d /proc/$pid ]; do
+	clear;
+	echo "dd $@"
+	kill -USR1 $pid
+	sleep 2;
+done

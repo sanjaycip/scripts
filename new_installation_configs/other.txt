@@ -1,0 +1,8 @@
+## conf ##
+gpasswd -a username fuse
+
+## nvidia nouveau ekran gidip gelme problemi ##
+GRUB_CMDLINE_LINUX_DEFAULT="drm_kms_helper.poll=0"
+
+## scripts ##
+cp bin/* /usr/local/bin

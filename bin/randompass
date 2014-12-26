@@ -1,0 +1,5 @@
+#!/bin/bash
+
+length="$1"
+[ "$length" = "" ] && length="16"
+cat /dev/urandom | base64 | head -c "$length" | xargs

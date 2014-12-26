@@ -1,0 +1,166 @@
+#!/usr/bin/env python2
+import sys, os
+import subprocess
+import threading
+import time
+
+TMP_FOLDER = "/run/shm/fsimg_%s" % os.getpid()
+EXIT_FLAG=False
+FLAG_ABNORMAL_EXIT=False
+def run(cmd, out=False):
+    if out:
+        r = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return (r.stdout.read(), r.stderr.read())
+    else:
+        r = subprocess.Popen(cmd, shell=True).wait()
+    if r:
+        return 0
+    return 1
+
+def clean():
+    global EXIT_FLAG
+    EXIT_FLAG=True
+    while run("umountlist %s" % TMP_FOLDER, out=True)[0] != "":
+        print "waiting umount %s" % TMP_FOLDER
+        run("umountlist %s | sh" % TMP_FOLDER, out=True)
+    run("rm -rf %s" % TMP_FOLDER)
+    if FLAG_ABNORMAL_EXIT:
+        print "\nexited abnormally"
+    print "clean ok"
+
+def print_usage_and_exit():
+    print "usage:   fsimg create imgpath size fstype"
+    print "         fsimg info imgpath"
+    print "         fsimg convert infile outfile outsize outfstype"
+    print "         fsimg mount infile target [fstype]"
+    exit(1)
+
+def create(filepath, size, fstype):
+    if size[-1] in "kKmMgG":
+        size_suffix = size[-1]
+        size = int(size[:-1])
+    else:
+        size_suffix = ""
+        size = int(size)
+
+    if size_suffix in "kK":
+        size <<= 10
+    elif size_suffix in "mM":
+        size <<= 20
+    elif size_suffix in "gG":
+        size <<= 30
+
+    if os.path.exists(filepath):
+        run("rm -f %s" % filepath) or exit(1)
+    run("truncate -s %s %s" % (size, filepath)) or exit(1)
+    run("mkfs -t %s %s" % (fstype, filepath)) or exit(1)
+    print "disk image create ok"
+
+def command_create():
+    if len(sys.argv) != 5:
+        print_usage_and_exit()
+    _, _, filepath, size, fstype = sys.argv
+    create(filepath, size, fstype)
+
+def command_info():
+    if len(sys.argv) != 3:
+        print_usage_and_exit()
+    _, _, filepath = sys.argv
+
+    print run("file %s" % filepath, out=True)[0][:-1]
+
+def show_du_df(x, stop=[True]):
+    if EXIT_FLAG or stop[0]:
+        return
+    run("df -h %s" % x)
+    run("btrfs filesystem df %s" % x)
+
+    threading.Timer(5, lambda : show_du_df(x, stop)).start()
+
+def get_mount_options(outfstype):
+    mount_options = ""
+    if outfstype == "btrfs":
+        mount_options = "-o compress-force=zlib"
+    elif outfstype == "btrfs-lzo-force":
+        mount_options = "-o compress-force=lzo"
+        outfstype="btrfs"
+    elif outfstype == "btrfs-lzo":
+        mount_options = "-o compress=lzo"
+        outfstype="btrfs"
+    return mount_options, outfstype
+    
+def command_convert():
+    if len(sys.argv) != 6:
+        print_usage_and_exit()
+    _, _, infile, outfile, outsize, outfstype  = sys.argv
+
+    source = "%s/source" % TMP_FOLDER
+    target = "%s/target" % TMP_FOLDER
+
+    mount_options, outfstype = get_mount_options(outfstype)
+
+    run("mkdir -p %s %s" % (source, target)) or exit(1)
+    run("mount -o ro %s %s" % (infile, source)) or exit(1)
+
+    outfile_tmp="%s.tmp" % outfile
+    create(outfile_tmp, outsize, outfstype)
+
+    run("mount %s %s %s" % (mount_options, outfile_tmp, target)) or exit(1)
+
+    print "copy files to new image"
+    stop_flag=[False]
+    show_du_df(target, stop_flag)
+    while run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) == 0:
+        print "retry rsync"
+        time.sleep(1)
+    # check
+    run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) or exit(1)
+    stop_flag[0]=True
+    run("umount %s %s" % (source, target))
+
+    run("mv %s %s" % (outfile_tmp, outfile))
+    run("rm -f %s" % outfile_tmp)
+
+def read_fs_type(f):
+    out, _ = run("blkid %s" % f, out=True)
+    print "!!! read_fs_type parse not implemented"
+    print out
+    exit(1)
+
+
+def command_mount():
+    if len(sys.argv) == 4:
+        _, _, infile, target = sys.argv
+        fstype = read_fs_type(infile)
+    elif len(sys.argv) == 5:
+        _, _, infile, target, fstype = sys.argv
+    else:
+        print_usage_and_exit()
+
+    mount_options, fstype = get_mount_options(fstype)
+    run("mount %s %s %s" % (mount_options, infile, target)) or exit(1)
+    print "mount ok"
+    
+if __name__ == '__main__':
+    try:
+        os.umask(077)
+        run("mkdir -p %s" % TMP_FOLDER)
+
+        if len(sys.argv) < 2:
+            print_usage_and_exit()
+        command = sys.argv[1]
+
+        if command == "create":
+            command_create()
+        elif command == "info":
+            command_info()
+        elif command == "convert":
+            command_convert()
+        elif command == "mount":
+            command_mount()
+        else:
+            print_usage_and_exit()
+    except:
+        FLAG_ABNORMAL_EXIT=True
+    finally:
+        clean()

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+
+# -a : archive -rlptgoD
+# -x : don't cross filesystem boundaries
+# -H : hard links
+# -X : extendend attrs ?? 
+# -h : human readable
+# -R : relative
+
+# --partial : keep partially transfared files
+# --progress : show progress
+# --append : append data onto shorter files
+# --rsh : remote shell to use
+
+rsync --partial --append --progress --rsh=ssh -axXH -h -R $1 $2
+
+
+# -r : recursive
+# -l : links
+# -p : perms
+# -t : times
+# -g : group
+# -D : --devices --specials
+
+# -E : executability # -p iceriyor
+# -A : acls,  -p iceriyor
