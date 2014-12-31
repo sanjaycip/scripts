@@ -54,7 +54,12 @@ def command_create():
     if len(sys.argv) != 5:
         print_usage_and_exit()
     _, _, filepath, size, fstype = sys.argv
-    create(filepath, size, fstype)
+
+    mount_options, fstype, encrypt = get_mount_options(fstype)
+    PWD = None
+    if encrypt:
+        PWD = getpass.getpass()
+    create(filepath, size, fstype, pwd=PWD)
 
 def command_convert():
     if len(sys.argv) != 6:
