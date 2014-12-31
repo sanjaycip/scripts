@@ -9,7 +9,7 @@ def run(cmd):
 
 def print_usage_and_exit():
     print "usage:   encimg create imgpath size fstype"
-    print "         encimg mount imgpath mntdir"
+    print "         encimg mount imgpath mntdir [mount_parameters]"
     exit(1)
 
 def command_create():
@@ -40,13 +40,14 @@ def command_create():
     run("cryptsetup luksClose %s" % luks_name)
 
 def command_mount():
-    if len(sys.argv) != 4:
+    if len(sys.argv) < 4:
         print_usage_and_exit()
-    _, _, filepath, mntdir = sys.argv
+    _, _, filepath, mntdir = sys.argv[:4]
+    mount_params = " ".join(sys.argv[4:])
 
     luks_name = "disk_%s" % os.getpid()
     run("cryptsetup luksOpen %s %s" % (filepath, luks_name))
-    run("mount /dev/mapper/%s %s" % (luks_name, mntdir))
+    run("mount %s /dev/mapper/%s %s" % (mount_params, luks_name, mntdir))
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

@@ -3,39 +3,14 @@ import sys, os
 import subprocess
 import threading
 import time
+import getpass
 
 TMP_FOLDER = "/run/shm/fsimg_%s" % os.getpid()
 EXIT_FLAG=False
 FLAG_ABNORMAL_EXIT=False
-def run(cmd, out=False):
-    if out:
-        r = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return (r.stdout.read(), r.stderr.read())
-    else:
-        r = subprocess.Popen(cmd, shell=True).wait()
-    if r:
-        return 0
-    return 1
+MOUNT_NO = 0
 
-def clean():
-    global EXIT_FLAG
-    EXIT_FLAG=True
-    while run("umountlist %s" % TMP_FOLDER, out=True)[0] != "":
-        print "waiting umount %s" % TMP_FOLDER
-        run("umountlist %s | sh" % TMP_FOLDER, out=True)
-    run("rm -rf %s" % TMP_FOLDER)
-    if FLAG_ABNORMAL_EXIT:
-        print "\nexited abnormally"
-    print "clean ok"
-
-def print_usage_and_exit():
-    print "usage:   fsimg create imgpath size fstype"
-    print "         fsimg info imgpath"
-    print "         fsimg convert infile outfile outsize outfstype"
-    print "         fsimg mount infile target [fstype]"
-    exit(1)
-
-def create(filepath, size, fstype):
+def create(filepath, size, fstype, pwd=None):
     if size[-1] in "kKmMgG":
         size_suffix = size[-1]
         size = int(size[:-1])
@@ -52,9 +27,28 @@ def create(filepath, size, fstype):
 
     if os.path.exists(filepath):
         run("rm -f %s" % filepath) or exit(1)
-    run("truncate -s %s %s" % (size, filepath)) or exit(1)
-    run("mkfs -t %s %s" % (fstype, filepath)) or exit(1)
+
+    if pwd:
+        run("randomgen %s > %s" % (size, filepath))
+        run("cryptsetup --key-file=- luksFormat %s -c aes-xts-plain64 -s 512 -h sha512" % filepath,
+            stdin_text=pwd)
+        LUKS_NAME = generate_luks_name()
+        run("cryptsetup --key-file=- luksOpen %s %s" % (filepath, LUKS_NAME), stdin_text=pwd)
+        run("mkfs -t %s /dev/mapper/%s" % (fstype, LUKS_NAME))
+        run("cryptsetup luksClose %s" % LUKS_NAME)
+    else:
+        run("truncate -s %s %s" % (size, filepath)) or exit(1)
+        run("mkfs -t %s %s" % (fstype, filepath)) or exit(1)
+
     print "disk image create ok"
+
+def mount(img, d, pwd=None, options="-o ro"):
+    out, _ = run("file %s" % img, out=True)
+    LUKS_NAME = generate_luks_name()
+    if "LUKS encrypted file" in out:
+        run("cryptsetup luksOpen %s %s" % (img, LUKS_NAME), stdin_text=pwd)
+        img = "/dev/mapper/%s" % LUKS_NAME
+    return run("mount %s %s %s" % (options, img, d))
 
 def command_create():
     if len(sys.argv) != 5:
@@ -62,33 +56,6 @@ def command_create():
     _, _, filepath, size, fstype = sys.argv
     create(filepath, size, fstype)
 
-def command_info():
-    if len(sys.argv) != 3:
-        print_usage_and_exit()
-    _, _, filepath = sys.argv
-
-    print run("file %s" % filepath, out=True)[0][:-1]
-
-def show_du_df(x, stop=[True]):
-    if EXIT_FLAG or stop[0]:
-        return
-    run("df -h %s" % x)
-    run("btrfs filesystem df %s" % x)
-
-    threading.Timer(5, lambda : show_du_df(x, stop)).start()
-
-def get_mount_options(outfstype):
-    mount_options = ""
-    if outfstype == "btrfs":
-        mount_options = "-o compress-force=zlib"
-    elif outfstype == "btrfs-lzo-force":
-        mount_options = "-o compress-force=lzo"
-        outfstype="btrfs"
-    elif outfstype == "btrfs-lzo":
-        mount_options = "-o compress=lzo"
-        outfstype="btrfs"
-    return mount_options, outfstype
-    
 def command_convert():
     if len(sys.argv) != 6:
         print_usage_and_exit()
@@ -97,15 +64,19 @@ def command_convert():
     source = "%s/source" % TMP_FOLDER
     target = "%s/target" % TMP_FOLDER
 
-    mount_options, outfstype = get_mount_options(outfstype)
+    mount_options, outfstype, encrypt = get_mount_options(outfstype)
 
     run("mkdir -p %s %s" % (source, target)) or exit(1)
-    run("mount -o ro %s %s" % (infile, source)) or exit(1)
+    mount(infile, source) or exit(1)
 
     outfile_tmp="%s.tmp" % outfile
-    create(outfile_tmp, outsize, outfstype)
 
-    run("mount %s %s %s" % (mount_options, outfile_tmp, target)) or exit(1)
+    PWD = None
+    if encrypt:
+        PWD = getpass.getpass()
+
+    create(outfile_tmp, outsize, outfstype, pwd=PWD)
+    mount(outfile_tmp, target, pwd=PWD, options=mount_options)
 
     print "copy files to new image"
     stop_flag=[False]
@@ -116,32 +87,29 @@ def command_convert():
     # check
     run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) or exit(1)
     stop_flag[0]=True
-    run("umount %s %s" % (source, target))
 
     run("mv %s %s" % (outfile_tmp, outfile))
     run("rm -f %s" % outfile_tmp)
-
-def read_fs_type(f):
-    out, _ = run("blkid %s" % f, out=True)
-    print "!!! read_fs_type parse not implemented"
-    print out
-    exit(1)
 
 
 def command_mount():
     if len(sys.argv) == 4:
         _, _, infile, target = sys.argv
         fstype = read_fs_type(infile)
+        print "TODO: add default mount options"
+        print "fstype:", fstype
+        print "not implemented, please select fstype manually"
+        print
     elif len(sys.argv) == 5:
         _, _, infile, target, fstype = sys.argv
+        mount_options, fstype, encrypt = get_mount_options(fstype)
+        mount(infile, target, options=mount_options)
+        print "mount ok"
     else:
         print_usage_and_exit()
 
-    mount_options, fstype = get_mount_options(fstype)
-    run("mount %s %s %s" % (mount_options, infile, target)) or exit(1)
-    print "mount ok"
-    
-if __name__ == '__main__':
+
+def main():
     try:
         os.umask(077)
         run("mkdir -p %s" % TMP_FOLDER)
@@ -152,15 +120,104 @@ if __name__ == '__main__':
 
         if command == "create":
             command_create()
-        elif command == "info":
-            command_info()
         elif command == "convert":
             command_convert()
         elif command == "mount":
             command_mount()
         else:
             print_usage_and_exit()
+    except SystemExit, e:
+        pass
     except:
         FLAG_ABNORMAL_EXIT=True
+        import traceback
+        print traceback.format_exc()
     finally:
         clean()
+
+
+def run(cmd, out=False, stdin_text=None):
+    if stdin_text:
+        stdin = subprocess.PIPE
+    else:
+        stdin = None
+    if out:
+        p = subprocess.Popen(cmd, shell=True, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return p.communicate(input=stdin_text)
+        # return (r.stdout.read(), r.stderr.read())
+    else:
+        p = subprocess.Popen(cmd, shell=True, stdin=stdin)
+        p.communicate(input=stdin_text)
+        r = p.wait()
+    if r:
+        return 0
+    return 1
+
+def clean():
+    global EXIT_FLAG
+    EXIT_FLAG=True
+    while run("umountlist %s" % TMP_FOLDER, out=True)[0] != "":
+        print "waiting umount %s" % TMP_FOLDER
+        run("umountlist %s | sh" % TMP_FOLDER, out=True)
+    run("rm -rf %s" % TMP_FOLDER)
+    run("stty echo")
+    if FLAG_ABNORMAL_EXIT:
+        print "\nexited abnormally"
+    print "clean ok"
+
+def print_usage_and_exit():
+    print "usage:   fsimg create imgpath size fstype"
+    print "         fsimg convert infile outfile outsize outfstype"
+    print "         fsimg mount infile target [fstype]"
+    exit(1)
+
+def show_du_df(x, stop=[True]):
+    if EXIT_FLAG or stop[0]:
+        return
+    run("df -h %s" % x)
+    run("btrfs filesystem df %s" % x)
+
+    threading.Timer(5, lambda : show_du_df(x, stop)).start()
+
+def generate_luks_name():
+    global MOUNT_NO
+    MOUNT_NO += 1
+    return "fsimg_%s_%s" % (os.getpid(), MOUNT_NO)
+
+def get_mount_options(outfstype):
+    options = outfstype.split(",")
+    if "enc" in options:
+        encrypt = True
+    else:
+        encrypt = False
+
+    mount_options = []
+    if "btrfs" in options:
+        mount_options += ["compress-force=zlib"]
+        outfstype = "btrfs"
+    elif "btrfs-lzo" in options:
+        mount_options += ["compress=lzo"]
+        outfstype = "btrfs"
+    elif "ext2" in options:
+        outfstype = "ext2"
+    elif "ext4" in options:
+        outfstype = "ext4"
+    else:
+        print "wrong fs type: " % outfstype
+        exit(1)
+    if len(mount_options):
+        mount_options = "-o " + " ".join(mount_options)
+    return mount_options, outfstype, encrypt
+
+def read_fs_type(f):
+    out, _ = run("blkid %s" % f, out=True)
+    t = [x.replace("TYPE=", "").replace("\"", "") for x in out.split() if x.startswith("TYPE=")]
+    if len(t) != 1:
+        print "!!! type error: "
+        print out
+        exit(1)
+    return t[0]
+
+
+if __name__ == '__main__':
+    main()
