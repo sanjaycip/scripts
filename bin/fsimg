@@ -43,9 +43,19 @@ def create(filepath, size, fstype, pwd=None):
     print "disk image create ok"
 
 def mount(img, d, pwd=None, options="-o ro"):
-    out, _ = run("file %s" % img, out=True)
-    LUKS_NAME = generate_luks_name()
-    if "LUKS encrypted file" in out:
+
+    isLUKS = False
+    if img.startswith("/dev/"):
+        out, _ = run("blkid %s" % img, out=True)
+        if 'TYPE="crypto_LUKS"' in out:
+            isLUKS = True
+    else:
+        out, _ = run("file %s" % img, out=True)
+        if "LUKS encrypted file" in out:
+            isLUKS = True
+
+    if isLUKS:
+        LUKS_NAME = generate_luks_name()
         run("cryptsetup luksOpen %s %s" % (img, LUKS_NAME), stdin_text=pwd)
         img = "/dev/mapper/%s" % LUKS_NAME
     return run("mount %s %s %s" % (options, img, d))
@@ -56,10 +66,27 @@ def command_create():
     _, _, filepath, size, fstype = sys.argv
 
     mount_options, fstype, encrypt = get_mount_options(fstype)
+
+    if filepath.startswith("/dev/"):
+        print "create file in /dev/ not supported"
+        exit(1)
+    
     PWD = None
     if encrypt:
-        PWD = getpass.getpass()
+        PWD = getPWD()
     create(filepath, size, fstype, pwd=PWD)
+
+def getPWD():
+    pwd1 = getpass.getpass()
+    print "re-enter"
+    pwd2 = getpass.getpass()
+    while pwd1 != pwd2:
+        print "pwd1 != pwd2\n"
+        pwd1 = getpass.getpass()
+        print "re-enter"
+        pwd2 = getpass.getpass()
+    return pwd1
+
 
 def command_convert():
     if len(sys.argv) != 6:
@@ -69,50 +96,61 @@ def command_convert():
     source = "%s/source" % TMP_FOLDER
     target = "%s/target" % TMP_FOLDER
 
-    mount_options, outfstype, encrypt = get_mount_options(outfstype)
-
     run("mkdir -p %s %s" % (source, target)) or exit(1)
     mount(infile, source) or exit(1)
 
-    outfile_tmp="%s.tmp" % outfile
+    if outfile.startswith("/dev/"):
+        print "outfile startswith /dev/"
+        stdout, _ = run("blockdev --getsize64 %s" % outfile, out=True)
+        outsize = "%s" % (int(stdout)/1024)
+        print "size changed to %sK = sizeof(%s)" % (outsize, outfile)
+        outfile_tmp = "/tmp/outfile_tmp_%s" % os.getpid()
+        print "tmpfile: %s" % outfile_tmp
+    else:
+        outfile_tmp="%s.tmp" % outfile
 
+    mount_options, outfstype, encrypt = get_mount_options("rw,"+outfstype)
     PWD = None
     if encrypt:
-        PWD = getpass.getpass()
+        PWD = getPWD()
 
     create(outfile_tmp, outsize, outfstype, pwd=PWD)
-    mount(outfile_tmp, target, pwd=PWD, options=mount_options)
+    mount(outfile_tmp, target, pwd=PWD, options=mount_options) or exit(1)
 
     print "copy files to new image"
     stop_flag=[False]
-    show_du_df(target, stop_flag)
-    while run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) == 0:
-        print "retry rsync"
-        time.sleep(1)
+    if outfstype=="btrfs":
+        show_du_df(target, stop_flag)
+    #while run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) == 0:
+    #    print "retry rsync"
+    #    time.sleep(1)
     # check
-    run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) or exit(1)
+    # run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) or exit(1)
+    run("cp -a %s/* %s/" % (source, target)) or exit(1)
     stop_flag[0]=True
 
-    run("mv %s %s" % (outfile_tmp, outfile))
-    run("rm -f %s" % outfile_tmp)
+    print "umount tmp disk"
+    run("umountlist %s | sh" % target) or exit(1)
 
+    if outfile.startswith("/dev/"):
+        print "copy to device"
+        run("dd if=%s of=%s iflag=direct oflag=direct bs=64K" % (outfile_tmp, outfile))
+    else:
+        run("mv %s %s" % (outfile_tmp, outfile))
+
+    run("rm -f %s" % outfile_tmp)
 
 def command_mount():
     if len(sys.argv) == 4:
         _, _, infile, target = sys.argv
-        fstype = read_fs_type(infile)
-        print "TODO: add default mount options"
-        print "fstype:", fstype
-        print "not implemented, please select fstype manually"
-        print
+        mount(infile, target)
     elif len(sys.argv) == 5:
         _, _, infile, target, fstype = sys.argv
         mount_options, fstype, encrypt = get_mount_options(fstype)
         mount(infile, target, options=mount_options)
-        print "mount ok"
     else:
         print_usage_and_exit()
-
+    print "mount ok"
 
 def main():
     try:
@@ -191,6 +229,7 @@ def generate_luks_name():
 
 def get_mount_options(outfstype):
     options = outfstype.split(",")
+
     if "enc" in options:
         encrypt = True
     else:
@@ -208,10 +247,17 @@ def get_mount_options(outfstype):
     elif "ext4" in options:
         outfstype = "ext4"
     else:
-        print "wrong fs type: " % outfstype
-        exit(1)
+        outfstype = None
+
+    if "rw" in options:
+        mount_options += ["rw"]
+    if "ssd" in options:
+        mount_options += ["ssd"]
+
     if len(mount_options):
-        mount_options = "-o " + " ".join(mount_options)
+        mount_options = "-o " + ",".join(mount_options)
+    else:
+        mount_options = "-o ro"
     return mount_options, outfstype, encrypt
 
 def read_fs_type(f):
@@ -222,7 +268,6 @@ def read_fs_type(f):
         print out
         exit(1)
     return t[0]
-
 
 if __name__ == '__main__':
     main()
