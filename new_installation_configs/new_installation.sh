@@ -2,12 +2,12 @@
 
 source $1
 
-echo "nameserver 208.67.222.222" > /etc/resolv.conf
+# echo "nameserver 208.67.222.222" > /etc/resolv.conf
 apt-get update
 
 add_repositories
 
-apt-get -y install $EMACS $RATPOISON $CODE $NET $UTIL $FIREFOX_EXTENSIONS $LIBREOFFICE_EXTENSIONS || exit
+apt-get -y install $EMACS $RATPOISON $CODE $NET $UTIL $FIREFOX_EXTENSIONS || exit
 
 # add ratpoison
 echo "[Desktop Entry]
