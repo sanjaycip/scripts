@@ -5,9 +5,13 @@ source $1
 # echo "nameserver 208.67.222.222" > /etc/resolv.conf
 apt-get update
 
+install_build_dep
+
 add_repositories
 
-apt-get -y install $EMACS $RATPOISON $CODE $NET $UTIL $FIREFOX_EXTENSIONS || exit
+install_ratpoison
+
+apt-get -y install $EMACS $RATPOISON_EXTENSIONS $CODE $NET $UTIL $FIREFOX_EXTENSIONS || exit
 
 # add ratpoison
 echo "[Desktop Entry]
@@ -20,6 +24,8 @@ Comment=" >  /usr/share/xsessions/ratpoison.desktop
 echo "blacklist pcspkr" > /etc/modprobe.d/disable-pcspkr.conf
 
 disable_services
+
+clean_build_dep
 
 # clean
 apt-get clean

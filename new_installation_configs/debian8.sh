@@ -19,3 +19,29 @@ disable_services() {
 	# disable modem-manager
 	sudo mv /usr/share/dbus-1/system-services/org.freedesktop.ModemManager1.service /usr/share/dbus-1/system-services/org.freedesktop.ModemManager1.service.disabled
 }
+
+install_build_packages() {
+	apt-get -y install devscripts
+}
+
+clean_build_packages() {
+	apt-get -y autoremove devscripts
+}
+
+install_ratpoison() {
+	apt-get -y build-dep ratpoison
+	CURDIR=`pwd`
+
+	mkdir tmp; cd tmp;
+	apt-get source ratpoison
+	cd ratpoison-*
+	wget https://raw.githubusercontent.com/tanerguven/conf/master/ratpoison-configuration/lastmsg_stdout.patch
+	patch -p1 -i lastmsg_stdout.patch
+	dch -i "lastmsg_stdout.patch"
+	dpkg-buildpackage -b -us -uc -rfakeroot
+	cd ..
+	dpkg -i ratpoison*.deb
+
+	cd $CURDIR
+	yes | aptitude markauto $(apt-cache showsrc ratpoison | sed -e '/Build-Depends/!d;s/Build-Depends: \|,\|([^)]*),*\|\[[^]]*\]//g')
+}
