@@ -20,11 +20,11 @@ disable_services() {
 	sudo mv /usr/share/dbus-1/system-services/org.freedesktop.ModemManager1.service /usr/share/dbus-1/system-services/org.freedesktop.ModemManager1.service.disabled
 }
 
-install_build_packages() {
+install_build_dep() {
 	apt-get -y install devscripts
 }
 
-clean_build_packages() {
+clean_build_dep() {
 	apt-get -y autoremove devscripts
 }
 
