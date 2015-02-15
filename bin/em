@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [[ -z "$1" ]] ; then
+	EMACS='emacs -nw --no-splash -q -l /taner/conf/home/emacs-configuration/init-basic.el'
+    FILE=/tmp/emacs_pipe_$$;
+    trap "rm -f $FILE" INT TERM EXIT
+    cat /dev/stdin > $FILE
+    if [[ -s $FILE ]] ; then
+	$EMACS $FILE < /dev/tty;
+    fi;
+    rm -f $FILE;
+else
+	EMACS='emacs -nw --no-splash -q -l /taner/conf/home/emacs-configuration/init-global.el'
+    $EMACS $@
+fi;

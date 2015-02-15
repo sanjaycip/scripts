@@ -6,10 +6,9 @@ git clone https://github.com/tanerguven/conf.git $1 || exit
 ln -sf $1/conkerorrc ~/.conkerorrc
 
 # emacs
-rm ~/.emacs
+rm -f ~/.emacs
 mkdir -p ~/.emacs.d/
 ln -sf $1/emacs-configuration ~/.emacs.d/
-ln -sf ~/.emacs.d/emacs-configuration/init-global.el ~/.emacs
 
 # ratpoison
 ln -sf $1/ratpoison-configuration/ratpoison ~/.ratpoison
@@ -23,3 +22,5 @@ CURDIR=`pwd`
 cd $1/emacs-configuration/;
 make;
 cd $CURDIR
+
+echo "!!! copy ../bin/* /usr/local/bin/"
