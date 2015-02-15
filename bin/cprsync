@@ -1,20 +1,15 @@
 #!/bin/sh
 
-
 # -a : archive -rlptgoD
-# -x : don't cross filesystem boundaries
+# -A : preserve acl
+# -X : extendend attrs ??
 # -H : hard links
-# -X : extendend attrs ?? 
-# -h : human readable
+
+# -x : don't cross filesystem boundaries
 # -R : relative
+# -h : human readable
 
-# --partial : keep partially transfared files
-# --progress : show progress
-# --append : append data onto shorter files
-# --rsh : remote shell to use
-
-rsync --partial --append --progress --rsh=ssh -axXH -h -R $1 $2
-
+rsync -aAXH -xRh --progress $1 $2
 
 # -r : recursive
 # -l : links
@@ -25,3 +20,10 @@ rsync --partial --append --progress --rsh=ssh -axXH -h -R $1 $2
 
 # -E : executability # -p iceriyor
 # -A : acls,  -p iceriyor
+
+# --------------
+# --partial : keep partially transfared files
+# --append : append data onto shorter files
+# --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"}
+# -c: checksum
+### -I: ignore times
