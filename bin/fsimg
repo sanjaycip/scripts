@@ -20,12 +20,18 @@ def create(filepath, size, fstype, pwd=None):
         size_suffix = ""
         size = int(size)
 
-    if size_suffix in "kK":
+    if size_suffix == "":
+        pass
+    elif size_suffix in "kK":
         size <<= 10
     elif size_suffix in "mM":
         size <<= 20
     elif size_suffix in "gG":
         size <<= 30
+    else:
+        print "unknown size suffix"
+        print "use K, M or G"
+        exit(0)
 
     if os.path.exists(filepath):
         run("rm -f %s" % filepath) or exit(1)
@@ -104,8 +110,8 @@ def command_convert():
     if outfile.startswith("/dev/"):
         print "outfile startswith /dev/"
         stdout, _ = run("blockdev --getsize64 %s" % outfile, out=True)
-        outsize = "%s" % (int(stdout)/1024)
-        print "size changed to %sK = sizeof(%s)" % (outsize, outfile)
+        outsize = "%s" % int(stdout)
+        print "size changed to %s = sizeof(%s)" % (outsize, outfile)
         outfile_tmp = "/tmp/outfile_tmp_%s" % os.getpid()
         print "tmpfile: %s" % outfile_tmp
     else:
@@ -136,7 +142,7 @@ def command_convert():
 
     if outfile.startswith("/dev/"):
         print "copy to device"
-        run("dd if=%s of=%s iflag=direct oflag=direct bs=64K" % (outfile_tmp, outfile))
+        run("dd if=%s of=%s oflag=direct bs=64K" % (outfile_tmp, outfile))
     else:
         run("mv %s %s" % (outfile_tmp, outfile))
     run("rm -f %s" % outfile_tmp)
