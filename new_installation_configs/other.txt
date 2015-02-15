@@ -1,8 +1,38 @@
-## conf ##
-gpasswd -a username fuse
+scripts
+=======
+cp bin/* /usr/local/bin
 
+
+usb installation
+================
+rc.local:
+  sudo -u $USERNAME mkdir -p /dev/shm/home/$USERNAME/.cache
+
+rm -rf ~/.cache
+ln -s /dev/shm/home/$USERNAME/.cache ~/.cache
+
+/etc/fstab:
+	tmpfs /tmp tmpfs defaults,noatime,nosuid,nodev,mode=1777,size=256M 0 0
+
+
+/root-aufs
+==========
+rc.local:
+	mkdir -p /root-aufs /dev/shm/root-aufs-cache
+	mount -t aufs -o br=/dev/shm/root-aufs-cache=rw:/=ro -o udba=reval none /root-aufs
+
+
+other configurations
+====================
+gpasswd -a $USERNAME fuse
+
+
+problemler
+==========
 ## nvidia nouveau ekran gidip gelme problemi ##
 GRUB_CMDLINE_LINUX_DEFAULT="drm_kms_helper.poll=0"
 
-## scripts ##
-cp bin/* /usr/local/bin
+
+gnome automount
+===============
+org.gnome.desktop.media-handling -> automount disable

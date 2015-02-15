@@ -5,7 +5,9 @@ import threading
 import time
 import getpass
 
-TMP_FOLDER = "/run/shm/fsimg_%s" % os.getpid()
+# FIXME: detect /run or /dev
+# TMP_FOLDER = "/run/shm/fsimg_%s" % os.getpid()
+TMP_FOLDER = "/dev/shm/fsimg_%s" % os.getpid()
 EXIT_FLAG=False
 FLAG_ABNORMAL_EXIT=False
 MOUNT_NO = 0
@@ -70,7 +72,7 @@ def command_create():
     if filepath.startswith("/dev/"):
         print "create file in /dev/ not supported"
         exit(1)
-    
+
     PWD = None
     if encrypt:
         PWD = getPWD()
@@ -121,24 +123,28 @@ def command_convert():
     stop_flag=[False]
     if outfstype=="btrfs":
         show_du_df(target, stop_flag)
-    #while run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) == 0:
-    #    print "retry rsync"
-    #    time.sleep(1)
-    # check
-    # run("rsync -axXH --inplace -h %s/ %s/" % (source, target)) or exit(1)
     run("cp -a %s/* %s/" % (source, target)) or exit(1)
     stop_flag[0]=True
 
     print "umount tmp disk"
     run("umountlist %s | sh" % target) or exit(1)
 
+    if outfile == infile:
+        print "temporarily umounting source"
+        source_umount_list, _ = run("umountlist %s" % source, out=True)
+        run("umount %s" % source) or exit(1)
+
     if outfile.startswith("/dev/"):
         print "copy to device"
         run("dd if=%s of=%s iflag=direct oflag=direct bs=64K" % (outfile_tmp, outfile))
     else:
         run("mv %s %s" % (outfile_tmp, outfile))
-
     run("rm -f %s" % outfile_tmp)
+
+    if outfile == infile:
+        print "umounting source"
+        run("%s" % source_umount_list)
+
 
 def command_mount():
     if len(sys.argv) == 4:
