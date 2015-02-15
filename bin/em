@@ -1,3 +1,0 @@
-#!/bin/sh
-
-emacs -nw -q -l ~/.emacs.d/emacs-configuration/init-global.el $@
