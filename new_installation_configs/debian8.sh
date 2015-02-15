@@ -1,5 +1,5 @@
 EMACS="emacs-nox emms auto-complete-el mplayer2"
-RATPOISON="ratpoison dmenu stalonetray xscreensaver suckless-tools conkeror htop xclip"
+RATPOISON_EXTENSIONS="dmenu stalonetray xscreensaver suckless-tools conkeror htop xclip"
 CODE="git build-essential ipython kvm"
 NET="sshfs encfs openvpn vpnc"
 UTIL="archivemount pv btrfs-tools"
@@ -21,18 +21,19 @@ disable_services() {
 }
 
 install_build_dep() {
-	apt-get -y install devscripts
+	apt-get -y install devscripts fakeroot
 }
 
 clean_build_dep() {
-	apt-get -y autoremove devscripts
+	apt-get -y autoremove devscripts fakeroot
 }
 
 install_ratpoison() {
 	apt-get -y build-dep ratpoison
 	CURDIR=`pwd`
 
-	mkdir tmp; cd tmp;
+	mkdir tmp || exit 1
+	cd tmp;
 	apt-get source ratpoison
 	cd ratpoison-*
 	wget https://raw.githubusercontent.com/tanerguven/conf/master/ratpoison-configuration/lastmsg_stdout.patch
