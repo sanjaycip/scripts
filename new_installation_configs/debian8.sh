@@ -2,9 +2,9 @@ EMACS="emacs-nox emms auto-complete-el mplayer2"
 RATPOISON_EXTENSIONS="dmenu stalonetray xscreensaver suckless-tools conkeror htop xclip"
 CODE="git build-essential ipython"
 NET="sshfs encfs openvpn vpnc"
-UTIL="archivemount pv btrfs-tools zip unzip alsa-utils rsync"
+UTIL="archivemount pv btrfs-tools zip unzip alsa-utils rsync arandr"
 FIREFOX_EXTENSIONS="foxyproxy"
-SYSTEM="kvm schroot"
+SYSTEM="kvm schroot testdisk extundelete"
 HW_MONITOR="cpufreq-utils stress mesa-utils lm-sensors"
 
 add_repositories() {

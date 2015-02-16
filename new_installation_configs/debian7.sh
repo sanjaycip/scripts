@@ -4,7 +4,7 @@ CODE="git build-essential ipython"
 NET="sshfs encfs openvpn vpnc"
 UTIL="archivemount pv btrfs-tools zip unzip alsa-utils rsync"
 FIREFOX_EXTENSIONS="foxyproxy"
-SYSTEM="kvm schroot"
+SYSTEM="kvm schroot testdisk extundelete"
 HW_MONITOR="cpufreq-utils stress mesa-utils lm-sensors"
 
 add_repositories() {
