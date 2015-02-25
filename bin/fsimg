@@ -129,7 +129,7 @@ def command_convert():
     stop_flag=[False]
     if outfstype=="btrfs":
         show_du_df(target, stop_flag)
-    run("cp -a %s/* %s/" % (source, target)) or exit(1)
+    run("cd %s; cp -a ./ %s" % (source, target)) or exit(1)
     stop_flag[0]=True
 
     print "umount tmp disk"
