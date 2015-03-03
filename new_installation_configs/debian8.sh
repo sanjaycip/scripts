@@ -5,7 +5,7 @@ NET="sshfs encfs openvpn vpnc"
 UTIL="archivemount pv zip unzip alsa-utils rsync arandr usbutils xbacklight nocache uml-utilities"
 FIREFOX_EXTENSIONS="foxyproxy"
 SYSTEM="kvm schroot btrfs-tools testdisk extundelete"
-HW_MONITOR="cpufreq-utils stress mesa-utils lm-sensors"
+HW_MONITOR="cpufrequtils stress mesa-utils lm-sensors"
 
 add_repositories() {
 	# firefox
