@@ -1,18 +1,14 @@
 EMACS="emacs-nox emms auto-complete-el mplayer2"
-RATPOISON_EXTENSIONS="dmenu stalonetray xscreensaver suckless-tools conkeror htop xclip"
-CODE="git build-essential ipython"
-NET="sshfs encfs openvpn vpnc"
-UTIL="archivemount pv zip unzip alsa-utils rsync arandr usbutils xbacklight nocache uml-utilities"
-FIREFOX_EXTENSIONS="foxyproxy"
-SYSTEM="kvm schroot btrfs-tools testdisk extundelete"
+RATPOISON_EXTENSIONS="dmenu stalonetray xscreensaver suckless-tools htop xclip"
+CODE="git build-essential ipython gdb"
+NET="sshfs encfs openvpn vpnc nmap"
+UTIL="archivemount pv zip unzip alsa-utils rsync arandr usbutils xbacklight nocache uml-utilities dialog"
+SYSTEM="kvm qemu-utils schroot btrfs-tools testdisk extundelete gparted"
 HW_MONITOR="cpufrequtils stress mesa-utils lm-sensors"
+DESKTOP="conkeror transmission-gtk file-roller synergy foxyproxy"
 
 add_repositories() {
-	# firefox
-	apt-get install pkg-mozilla-archive-keyring || exit
-	echo "deb http://mozilla.debian.net/ wheezy-backports iceweasel-release" > /etc/apt/sources.list.d/firefox.list
-	apt-get update || exit
-	apt-get -y dist-upgrade || exit
+
 }
 
 disable_services() {

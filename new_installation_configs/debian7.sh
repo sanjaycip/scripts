@@ -3,9 +3,9 @@ RATPOISON_EXTENSIONS="dmenu stalonetray xscreensaver suckless-tools conkeror hto
 CODE="git build-essential ipython"
 NET="sshfs encfs openvpn vpnc"
 UTIL="archivemount pv btrfs-tools zip unzip alsa-utils rsync"
-FIREFOX_EXTENSIONS="foxyproxy"
 SYSTEM="kvm schroot testdisk extundelete"
 HW_MONITOR="cpufreq-utils stress mesa-utils lm-sensors"
+DESKTOP="foxyproxy"
 
 add_repositories() {
 	# firefox
