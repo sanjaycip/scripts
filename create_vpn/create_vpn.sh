@@ -1,9 +1,19 @@
 #!/bin/bash
 
-source $1
+CONF_FILE=$1
+OUTPUT_DIR=$2
+
+if [ ! -f ${CONF_FILE} ] || [ ${OUTPUT_DIR} == "" ] ; then
+	echo "wrong paramter"
+	echo "usage : $1 CONFFILE OUTPUTDIR"
+	exit 1
+fi
+
+source ${CONF_FILE}
+
+EASY_RSA_DIR=/usr/share/easy-rsa/
 
 CURDIR=`pwd`
-
 OUT_DIR=$CURDIR/$2
 
 DH=dh$KEY_SIZE.pem
@@ -33,6 +43,7 @@ create_server_conf() {
 }
 
 create_client_conf() {
+	CLIENT_NAME=$1
 	CONF_FILE=$2/vpn.conf
 	echo "client" > $CONF_FILE
 
@@ -51,12 +62,23 @@ create_client_conf() {
 	if [[ -n "$SHARE_INTERNET" ]]; then
 		printf "script-security 2\nup /etc/openvpn/update-resolv-conf\ndown /etc/openvpn/update-resolv-conf\n" >> $CONF_FILE;
 	fi
-}
 
+	OVPN_FILE=$2/conf.ovpn
+	cp $CONF_FILE $OVPN_FILE
+	echo "<ca>" >> $OVPN_FILE
+	cat ca.crt >> $OVPN_FILE
+	echo "</ca>" >> $OVPN_FILE
+	echo "<cert>" >> $OVPN_FILE
+	cat ${CLIENT_NAME}.cert
+	echo "</cert>" >> $OVPN_FILE
+	echo "<key>" >> $OVPN_FILE
+	cat ${CLIENT_NAME}.key
+	echo "</key>" >> $OVPN_FILE
+}
 
 run() {
 	rm -rf $OUT_DIR/easy-rsa
-	cp -rf /usr/share/doc/openvpn/examples/easy-rsa/2.0/ $OUT_DIR/easy-rsa
+	cp -rf ${EASY_RSA_DIR} $OUT_DIR/easy-rsa
 
 	cd $OUT_DIR/easy-rsa;
 
