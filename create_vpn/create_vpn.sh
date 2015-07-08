@@ -1,4 +1,4 @@
-#!/bin/bash
+3#!/bin/bash
 
 CONF_FILE=$1
 OUTPUT_DIR=$2
@@ -44,15 +44,15 @@ create_server_conf() {
 
 create_client_conf() {
 	CLIENT_NAME=$1
-	CONF_FILE=$2/vpn.conf
+	CLIENT_DIR=$2
+
+	CONF_FILE=${CLIENT_DIR}/vpn.conf
 	echo "client" > $CONF_FILE
 
 	echo "remote $SERVER_IP" >> $CONF_FILE;
 
 	printf "port $PORT\nproto $PROTO\ndev $DEV\ncipher $CIPHER\nns-cert-type server\n" >> $CONF_FILE;
 	if [[ -n "$COMPRESSION" ]]; then echo "$COMPRESSION" >> $CONF_FILE; fi
-
-	printf "\nca ca.crt\ncert $1.crt\nkey $1.key\n" >> $CONF_FILE;
 
 	printf "\nnobind\nauth-nocache\npersist-key\npersist-tun\n\n" >> $CONF_FILE;
 
@@ -63,17 +63,21 @@ create_client_conf() {
 		printf "script-security 2\nup /etc/openvpn/update-resolv-conf\ndown /etc/openvpn/update-resolv-conf\n" >> $CONF_FILE;
 	fi
 
-	OVPN_FILE=$2/conf.ovpn
+	################## .ovpn file #####################
+	OVPN_FILE=${CLIENT_DIR}/${CLIENT_NAME}.ovpn
 	cp $CONF_FILE $OVPN_FILE
 	echo "<ca>" >> $OVPN_FILE
-	cat ca.crt >> $OVPN_FILE
+	cat ${CLIENT_DIR}/ca.crt >> $OVPN_FILE
 	echo "</ca>" >> $OVPN_FILE
 	echo "<cert>" >> $OVPN_FILE
-	cat ${CLIENT_NAME}.cert
+	cat ${CLIENT_DIR}/${CLIENT_NAME}.crt >> $OVPN_FILE
 	echo "</cert>" >> $OVPN_FILE
 	echo "<key>" >> $OVPN_FILE
-	cat ${CLIENT_NAME}.key
+	cat ${CLIENT_DIR}/${CLIENT_NAME}.key >> $OVPN_FILE
 	echo "</key>" >> $OVPN_FILE
+	###################################################
+
+	printf "\nca ca.crt\ncert $1.crt\nkey $1.key\n" >> $CONF_FILE;
 }
 
 run() {
