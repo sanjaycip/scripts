@@ -63,20 +63,6 @@ create_client_conf() {
 		printf "script-security 2\nup /etc/openvpn/update-resolv-conf\ndown /etc/openvpn/update-resolv-conf\n" >> $CONF_FILE;
 	fi
 
-	################## .ovpn file #####################
-	OVPN_FILE=${CLIENT_DIR}/${CLIENT_NAME}.ovpn
-	cp $CONF_FILE $OVPN_FILE
-	echo "<ca>" >> $OVPN_FILE
-	cat ${CLIENT_DIR}/ca.crt >> $OVPN_FILE
-	echo "</ca>" >> $OVPN_FILE
-	echo "<cert>" >> $OVPN_FILE
-	cat ${CLIENT_DIR}/${CLIENT_NAME}.crt >> $OVPN_FILE
-	echo "</cert>" >> $OVPN_FILE
-	echo "<key>" >> $OVPN_FILE
-	cat ${CLIENT_DIR}/${CLIENT_NAME}.key >> $OVPN_FILE
-	echo "</key>" >> $OVPN_FILE
-	###################################################
-
 	printf "\nca ca.crt\ncert $1.crt\nkey $1.key\n" >> $CONF_FILE;
 }
 
@@ -88,6 +74,9 @@ run() {
 
 	# change keysize to $KEY_SIZE
 	sed -i 's/^\(export\ KEY_SIZE=\).*/\1$KEY_SIZE/' vars
+
+	# comment subjectAltName=.. line
+	sed -e '/subjectAltName=*/ s/^#*/#/' -i openssl-1.0.0.cnf
 
 	source vars;
 	./clean-all
