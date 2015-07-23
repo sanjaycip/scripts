@@ -1,14 +1,20 @@
 EMACS="emacs-nox emms auto-complete-el mplayer2"
 RATPOISON_EXTENSIONS="dmenu stalonetray xscreensaver suckless-tools htop xclip"
-CODE="git build-essential ipython gdb"
-NET="sshfs encfs openvpn vpnc nmap"
+CODE="git build-essential ipython gdb manpages-dev manpages-posix-dev"
+NET="sshfs encfs openvpn vpnc nmap filezilla"
 UTIL="archivemount pv zip unzip alsa-utils rsync arandr usbutils xbacklight nocache uml-utilities dialog"
-SYSTEM="kvm qemu-utils schroot btrfs-tools testdisk extundelete gparted"
+SYSTEM="kvm qemu-utils schroot btrfs-tools testdisk extundelete gparted xvnc4viewer"
 HW_MONITOR="cpufrequtils stress mesa-utils lm-sensors"
-DESKTOP="conkeror transmission-gtk file-roller synergy foxyproxy"
+DESKTOP="owncloud-client transmission-gtk file-roller synergy foxyproxy"
+MEDIA="libav-tools gstreamer1.0-libav brasero easytag"
 
 add_repositories() {
-
+	# firefox
+	apt-get install pkg-mozilla-archive-keyring || exit
+	echo "deb http://mozilla.debian.net/ jessie-backports iceweasel-release" > /etc/apt/sources.list.d/firefox.list
+	apt-get update || exit
+	apt-get -y dist-upgrade || exit
+	apt-get install -t jessie-backports iceweasel
 }
 
 disable_services() {

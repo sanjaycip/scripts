@@ -11,7 +11,7 @@ add_repositories
 
 install_ratpoison
 
-apt-get -y install $EMACS $RATPOISON_EXTENSIONS $CODE $NET $UTIL $SYSTEM $HW_MONITOR $DESKTOP || exit
+apt-get -y install $EMACS $RATPOISON_EXTENSIONS $CODE $NET $UTIL $SYSTEM $HW_MONITOR $DESKTOP $MEDIA || exit
 
 # add ratpoison
 echo "[Desktop Entry]
