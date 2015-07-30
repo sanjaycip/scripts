@@ -18,7 +18,7 @@ def umount(info):
 def find_dev_mounts():
     for line in open("/proc/mounts"):
         dev, mount_point, fstype, flags, _, _ = line.split()
-        dev = os.path.realpath(dev)
+        dev = "%s/" % os.path.realpath(dev)
         if dev in dev_mounts:
             dev_mounts[dev] += 1
         else:
@@ -30,7 +30,10 @@ if __name__ == '__main__':
         print "usage:   umountall directory"
         print "         umountall directory | sh"
         exit(1)
-    directory = os.path.abspath(sys.argv[1])
+    if sys.argv[1].endswith('/'):
+        directory = "%s/" % os.path.abspath(sys.argv[1])
+    else:
+        directory = os.path.abspath(sys.argv[1])
     find_dev_mounts()
 
     fs_mounts.sort(key=lambda x: len(x[1]), reverse=True)
