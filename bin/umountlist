@@ -18,12 +18,12 @@ def umount(info):
 def find_dev_mounts():
     for line in open("/proc/mounts"):
         dev, mount_point, fstype, flags, _, _ = line.split()
-        dev = "%s/" % os.path.realpath(dev)
+        dev = "%s" % os.path.realpath(dev)
         if dev in dev_mounts:
             dev_mounts[dev] += 1
         else:
             dev_mounts[dev] = 1
-        fs_mounts.append((dev, mount_point, fstype, flags))
+        fs_mounts.append((dev, "%s/" % mount_point, fstype, flags))
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
