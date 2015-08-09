@@ -1,0 +1,16 @@
+#!/bin/sh
+SRC=$1
+DST=$2
+
+if [ -d $DST ]; then
+	DST=$DST/$(basename "$SRC")
+fi
+
+# tar sparse file : S
+
+if [ -d "$SRC" ]; then
+	mkdir "$DST" 2> /dev/null
+	tar cf - -C "$SRC" .  | pv -pterb -s `du -sb "$SRC" | cut -f1` | tar xf - -C "$DST"
+elif [ -f "$SRC" ]; then
+	pv < "$SRC" > "$DST"
+fi
