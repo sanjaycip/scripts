@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# bug: apt-get update
+#	E: Unable to determine file size of fd 7 ....
+# https://bugs.launchpad.net/qemu/+bug/1336794
+
 if [ "$(id -u)" != "0" ]; then
 	echo "run as root"
 	exit 1
