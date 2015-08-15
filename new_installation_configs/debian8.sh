@@ -1,5 +1,5 @@
 EMACS="emacs-nox emms auto-complete-el mplayer2"
-RATPOISON_EXTENSIONS="dmenu stalonetray xscreensaver suckless-tools htop xclip"
+RATPOISON_EXTENSIONS="dmenu stalonetray gnome-screensaver suckless-tools htop xclip"
 CODE="git build-essential ipython gdb manpages-dev manpages-posix-dev"
 NET="sshfs encfs openvpn vpnc nmap filezilla"
 UTIL="archivemount pv zip unzip alsa-utils rsync arandr usbutils xbacklight nocache uml-utilities dialog"
