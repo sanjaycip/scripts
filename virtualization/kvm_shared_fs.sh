@@ -1,40 +1,59 @@
 #!/bin/bash
 
-# bug: apt-get update
-#	E: Unable to determine file size of fd 7 ....
-# https://bugs.launchpad.net/qemu/+bug/1336794
+if [ "$KVM_MEMORY" == "" ]; then
+	KVM_MEMORY="512"
+fi
 
-if [ "$(id -u)" != "0" ]; then
-	echo "run as root"
+
+KVM_ROOT_DIR=$1
+if [ "$KVM_ROOT_DIR" == "/" ]; then
+	echo "ERROR: system root cannot used as ROOT_DIR"
 	exit 1
 fi
 
-FS_ROOT=$(readlink -f $1)
+cleanup() {
 
-if [ "$FS_ROOT" == "/" ]; then
-	echo "[error] FS_ROOT=/"
-	echo "using system rootfs as kvm rootfs can be problematic"
-	exit 1
-fi
-
-MEMORY=$2
-KERNEL_PARAMETERS=$3
-
-run() {
-	kvm \
-		-smp $(nproc) -m $MEMORY \
-		-serial mon:stdio \
-		-kernel "/boot/vmlinuz-$(uname -r)" \
-		-initrd "/boot/initrd.img-$(uname -r)" \
-		-fsdev local,id=r,path=$FS_ROOT,security_model=passthrough \
-		-device virtio-9p-pci,fsdev=r,mount_tag=r \
-		-append "$KERNEL_PARAMETERS root=r rw rootfstype=9p rootflags=trans=virtio"
+	echo "cleanup ok"
 }
 
-echo "KVM_ROOT_DIR: $FS_ROOT"
-echo "KERNEL_PARAMETERS: '$KERNEL_PARAMETERS'"
+run() {
+
+	if [ "" != "$KVM_VMLINUZ" ];then
+		vmlinuz=$KVM_VMLINUZ
+	elif [ "" != "$(readlink -e $KVM_ROOT_DIR/boot/vmlinuz-*)" ]; then
+		vmlinuz=$(readlink -e $KVM_ROOT_DIR/boot/vmlinuz-* | head -n 1)
+	else
+		vmlinuz="/boot/vmlinuz-$(uname -r)"
+	fi
+
+	if [ "" != "$KVM_INITRD" ]; then
+		initrd=$KVM_INITRD
+	elif [ "" != "$(readlink -e $KVM_ROOT_DIR/boot/initrd.img-*)" ]; then
+		initrd=$(readlink -e $KVM_ROOT_DIR/boot/initrd.img-* | head -n 1)
+	else
+		initrd="/boot/initrd.img-$(uname -r)"
+	fi
+
+	echo "kernel: $vmlinuz"
+	echo "initrd: $initrd"
+
+	kvm \
+		-smp $(nproc) -m $KVM_MEMORY \
+		-serial mon:stdio \
+		-kernel "$vmlinuz" \
+		-initrd "$initrd" \
+		-fsdev local,id=r,path=$KVM_ROOT_DIR,security_model=passthrough \
+		-device virtio-9p-pci,fsdev=r,mount_tag=r \
+		$KVM_PARAMETERS \
+		-append "$KVM_KERNEL_PARAMETERS root=r rw rootfstype=9p rootflags=trans=virtio"
+}
+
+trap cleanup EXIT
+
+echo "KVM_ROOT_DIR: $KVM_ROOT_DIR"
+echo "KERNEL_PARAMETERS: '$KVM_KERNEL_PARAMETERS'"
 echo "CPU: $(nproc)"
-echo "MEMORY: $MEMORY"
-echo "kernel version: $(uname -r)"
+echo "MEMORY: $KVM_MEMORY"
+echo "KVM_PARAMETERS: $KVM_PARAMETERS"
 
 run

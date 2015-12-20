@@ -10,8 +10,7 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 FS_ROOT=$1
-MEMORY=$2
-KERNEL_PARAMETERS=$3
+#KVM_KERNEL_PARAMETERS
 
 TMP_DIR=/dev/shm/kvm_aufs_root/$$
 CACHE_DIR=$TMP_DIR/root-aufs-cache
@@ -32,24 +31,12 @@ run() {
 
 	rm -f $KVM_ROOT_DIR/etc/fstab $KVM_ROOT_DIR/etc/crypttab
 
-	kvm \
-		-smp $(nproc) -m $MEMORY \
-		-serial mon:stdio \
-		-kernel "/boot/vmlinuz-$(uname -r)" \
-		-initrd "/boot/initrd.img-$(uname -r)" \
-		-fsdev local,id=r,path=$KVM_ROOT_DIR,security_model=passthrough \
-		-device virtio-9p-pci,fsdev=r,mount_tag=r \
-		-append "$KERNEL_PARAMETERS root=r rw rootfstype=9p rootflags=trans=virtio"
+	KVM_MEMORY=$KVM_MEMORY KVM_KERNEL_PARAMETERS=$KVM_KERNEL_PARAMETERS kvm_shared_fs.sh $KVM_ROOT_DIR
 }
 
 trap cleanup EXIT
 
 echo "TMP_DIR: $TMP_DIR"
 echo "CACHE_DIR: $CACHE_DIR"
-echo "KVM_ROOT_DIR: $KVM_ROOT_DIR"
-echo "KERNEL_PARAMETERS: '$KERNEL_PARAMETERS'"
-echo "CPU: $(nproc)"
-echo "MEMORY: $MEMORY"
-echo "kernel version: $(uname -r)"
 
 run
