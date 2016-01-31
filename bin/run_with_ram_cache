@@ -4,6 +4,7 @@ umask 077
 COMMAND=$1
 CACHE_DIR=`(cd $2 && pwd)`
 EXCLUDE_PATTERN=$3
+PARAMETERS=$4
 
 DIR=/dev/shm/$CACHE_DIR
 CPRSYNC="rsync --delete -ax --progress -h --inplace --checksum --no-whole-file"
@@ -48,7 +49,7 @@ else
     mv $CACHE_DIR $CACHE_DIR.backup
     ln -s $DIR $CACHE_DIR
 
-    $COMMAND
+    $COMMAND $PARAMETERS
 
     echo
     clean

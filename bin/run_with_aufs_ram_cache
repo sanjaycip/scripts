@@ -4,6 +4,7 @@ umask 077
 COMMAND=$1
 CACHE_DIR=`(cd $2 && pwd)`
 EXCLUDE_PATTERN=$3
+PARAMETERS=$4
 
 # aufs mountpoint
 AUFS_ROOT=/root-aufs
@@ -44,8 +45,8 @@ else
     mv $CACHE_DIR $CACHE_DIR.backup
     ln -s $AUFS_ROOT/$CACHE_DIR.backup $CACHE_DIR
 
-    $COMMAND
-    
+    $COMMAND $PARAMETERS
+
     echo
     clean
 fi
