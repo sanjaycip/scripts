@@ -33,7 +33,7 @@ echo "$0"
 
 if [ -e $CACHE_DIR ] && [ -h $CACHE_DIR ]; then
     echo "another $COMMAND is running"
-    $COMMAND
+    $COMMAND $PARAMETERS
 else
     trap clean INT EXIT TERM
 
