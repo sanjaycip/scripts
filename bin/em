@@ -6,7 +6,7 @@ if [[ -z "$1" ]] ; then
     trap "rm -f $FILE" INT TERM EXIT
     cat /dev/stdin > $FILE
     if [[ -s $FILE ]] ; then
-	$EMACS $FILE < /dev/tty;
+		$EMACS $FILE < /dev/tty;
     fi;
     rm -f $FILE;
 else

@@ -9,7 +9,7 @@
 # -R : relative
 # -h : human readable
 
-rsync -aAXH -xRh --progress $1 $2
+rsync -aAXH -xRh --progress "$1" "$2"
 
 # -r : recursive
 # -l : links
