@@ -11,7 +11,7 @@ FILE_LIST={}
 for f in (
         "cp2", "cprsync", "ddwatch", "em", "firefox", "fsimg", "randomgen", "randompass",
         "run_with_aufs_ram_cache", "run_with_ram_cache", "tmpclean.sh", "tmpfs_compressed.py",
-        "tmpmnt_archivemount", "umountlist", "xclips"):
+        "tmpmnt_archivemount", "umountlist", "xclips", "ssh-vpn.sh"):
     FILE_LIST["/usr/local/bin/%s" % f] = "scripts/bin/%s" % f
 
 
@@ -23,6 +23,8 @@ FILE_LIST["/usr/local/bin/run_docker.sh"] = "containers/docker/scripts/run_docke
 FILE_LIST["/usr/local/lib/taner/fsimg.py"] = "scripts/lib/fsimg.py"
 FILE_LIST["/usr/local/lib/taner/util.py"] = "scripts/lib/util.py"
 FILE_LIST["/usr/local/lib/taner/ipcsh.py"] = "python-ipcsh/ipcsh.py"
+
+FILE_LIST["/usr/local/bin/virtual_x_screen.sh"] = "scripts/other/virtual_x_screen.sh"
 
 
 if __name__ == '__main__':
