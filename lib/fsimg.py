@@ -1,14 +1,16 @@
 #!/usr/bin/env python2
-
-_DEPENDENCY_PROGRAMS_ = ("umountlist", "randomgen", "cryptsetup", "mkfs", "blkid")
-
 import sys, os
 
-sys.path.append("/taner/scripts/lib/")
+sys.path.append("/usr/local/lib/taner")
 import ipcsh
 from ipcsh import ipcsh as sh
 
-from util import check_command, exit_error, raise_error
+import util
+from util import exit_error, raise_error
+
+_DEPENDENCY_PROGRAMS_ = ("umountlist", "randomgen", "cryptsetup", "mkfs", "blkid", "cp2")
+util.check_command(*_DEPENDENCY_PROGRAMS_) or exit_error("check dependency programs")
+
 
 MOUNT_NO=0
 
@@ -90,7 +92,7 @@ def mount(img, d, pwd=None, options="-o ro", name=None):
 
 
 
-def command_convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
+def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
     # FIXME: other mount options (compress=lzo etc.)
     source = "%s/source" % TMP_FOLDER
     target = "%s/target" % TMP_FOLDER
@@ -100,7 +102,7 @@ def command_convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
     mount(infile, source, pwd=PWD)
 
     if outfile.startswith("/dev/"):
-        print "convert to /dev not supported"
+        print "FIXME: convert to /dev incomplete"
         raise_error()
         # print "outfile startswith /dev/"
         # stdout = sh << "blockdev --getsize64 %(outfile)s" > str
@@ -129,14 +131,14 @@ def command_convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
     sh.r == 0 or raise_error()
 
     if outfile == infile:
-        print "same file not supported"
+        print "FIXME: convert to same file incomplete"
         raise_error()
         # print "temporarily umounting source"
         # source_umount_list = sh << "umountlist %(source)s" > str
         # run("umount %s" % source) or exit(1)
 
     if outfile.startswith("/dev/") and not outfile.startswith("/dev/shm/"):
-        print "convert to /dev not supported"
+        print "FIXME: convert to /dev incomplete"
         raise_error()
         #print "copy to device"
         #run("dd if=%s of=%s oflag=direct bs=64K" % (outfile_tmp, outfile))
@@ -145,7 +147,7 @@ def command_convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
         sh << "mv %(outfile_tmp)s %(outfile)s" > None
 
     if outfile == infile:
-        print "same file not supported"
+        print "FIXME: convert to same file incomplete"
         raise_error()
         # print "umounting source"
         # run("%s" % source_umount_list)

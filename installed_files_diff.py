@@ -20,6 +20,11 @@ for f in ("kvm_shared_fs.sh", "kvm_aufs_root.sh", "kvm_fsimg.sh"):
 
 FILE_LIST["/usr/local/bin/run_docker.sh"] = "containers/docker/scripts/run_docker.sh"
 
+FILE_LIST["/usr/local/lib/taner/fsimg.py"] = "scripts/lib/fsimg.py"
+FILE_LIST["/usr/local/lib/taner/util.py"] = "scripts/lib/util.py"
+FILE_LIST["/usr/local/lib/taner/ipcsh.py"] = "python-ipcsh/ipcsh.py"
+
+
 if __name__ == '__main__':
     for k,v in FILE_LIST.iteritems():
         v = "%s/%s" % (GIT_DIR, v)

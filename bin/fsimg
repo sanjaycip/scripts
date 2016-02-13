@@ -5,71 +5,19 @@ import threading
 import time
 import getpass
 
+sys.path.append("/usr/local/lib/taner")
+# import ipcsh
+# from ipcsh import ipcsh as sh
+# from util import check_command, exit_error, randompass, sha256sum
+import fsimg
+from fsimg import create, mount, convert
+
 # FIXME: detect /run or /dev
 # TMP_FOLDER = "/run/shm/fsimg_%s" % os.getpid()
 TMP_FOLDER = "/dev/shm/fsimg_%s" % os.getpid()
 EXIT_FLAG=False
 FLAG_ABNORMAL_EXIT=False
-MOUNT_NO = 0
 
-def create(filepath, size, fstype, pwd=None):
-    if size[-1] in "kKmMgG":
-        size_suffix = size[-1]
-        size = int(size[:-1])
-    else:
-        size_suffix = ""
-        size = int(size)
-
-    if size_suffix == "":
-        pass
-    elif size_suffix in "kK":
-        size <<= 10
-    elif size_suffix in "mM":
-        size <<= 20
-    elif size_suffix in "gG":
-        size <<= 30
-    else:
-        print "unknown size suffix"
-        print "use K, M or G"
-        exit(0)
-
-    if os.path.exists(filepath):
-        run("rm -f %s" % filepath) or exit(1)
-
-    if pwd:
-        run("randomgen %s > %s" % (size, filepath))
-        run("cryptsetup --key-file=- luksFormat %s -c aes-xts-plain64 -s 512 -h sha512" % filepath,
-            stdin_text=pwd)
-        LUKS_NAME = generate_luks_name()
-        run("cryptsetup --key-file=- luksOpen %s %s" % (filepath, LUKS_NAME), stdin_text=pwd)
-        run("mkfs -t %s /dev/mapper/%s" % (fstype, LUKS_NAME))
-        run("cryptsetup luksClose %s" % LUKS_NAME)
-    else:
-        run("truncate -s %s %s" % (size, filepath)) or exit(1)
-        run("mkfs -t %s %s" % (fstype, filepath)) or exit(1)
-
-    print "disk image create ok"
-
-def mount(img, d, pwd=None, options="-o ro", name=None):
-
-    isLUKS = False
-    if img.startswith("/dev/"):
-        out, _ = run("blkid %s" % img, out=True)
-        if 'TYPE="crypto_LUKS"' in out:
-            isLUKS = True
-    else:
-        out, _ = run("file %s" % img, out=True)
-        if "LUKS encrypted file" in out:
-            isLUKS = True
-
-    if isLUKS:
-        if name == None:
-            LUKS_NAME = generate_luks_name()
-        else:
-            LUKS_NAME = name
-        run("cryptsetup luksOpen %s %s" % (img, LUKS_NAME), stdin_text=pwd)
-        img = "/dev/mapper/%s" % LUKS_NAME
-    return run("mount %s %s %s" % (options, img, d))
 
 def command_create():
     if len(sys.argv) != 5:
@@ -104,65 +52,20 @@ def command_convert():
         print_usage_and_exit()
     _, _, infile, outfile, outsize, outfstype  = sys.argv
 
-    source = "%s/source" % TMP_FOLDER
-    target = "%s/target" % TMP_FOLDER
-
-    run("mkdir -p %s %s" % (source, target)) or exit(1)
-    mount(infile, source) or exit(1)
-
-    if outfile.startswith("/dev/"):
-        print "outfile startswith /dev/"
-        stdout, _ = run("blockdev --getsize64 %s" % outfile, out=True)
-        outsize = "%s" % int(stdout)
-        print "size changed to %s = sizeof(%s)" % (outsize, outfile)
-        outfile_tmp = raw_input('write path for outfile_tmp:')
-        print "tmpfile: %s" % outfile_tmp
-    else:
-        outfile_tmp="%s.tmp" % outfile
-
     mount_options, outfstype, encrypt, _name = get_mount_options("rw,"+outfstype)
     PWD = None
     if encrypt:
         PWD = getPWD()
-
-    create(outfile_tmp, outsize, outfstype, pwd=PWD)
-    mount(outfile_tmp, target, pwd=PWD, options=mount_options) or exit(1)
-
-    print "copy files to new image"
-    stop_flag=[False]
-    if outfstype=="btrfs":
-        show_du_df(target, stop_flag)
-    run("cd %s; cp -a ./ %s" % (source, target)) or exit(1)
-    stop_flag[0]=True
-
-    print "umount tmp disk"
-    run("umountlist %s | sh" % target) or exit(1)
-
-    if outfile == infile:
-        print "temporarily umounting source"
-        source_umount_list, _ = run("umountlist %s" % source, out=True)
-        run("umount %s" % source) or exit(1)
-
-    if outfile.startswith("/dev/"):
-        print "copy to device"
-        run("dd if=%s of=%s oflag=direct bs=64K" % (outfile_tmp, outfile))
-    else:
-        run("mv %s %s" % (outfile_tmp, outfile))
-    run("rm -f %s" % outfile_tmp)
-
-    if outfile == infile:
-        print "umounting source"
-        run("%s" % source_umount_list)
-
+    convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD)
 
 def command_mount():
     if len(sys.argv) == 4:
         _, _, infile, target = sys.argv
-        mount(infile, target) or exit(1)
+        mount(infile, target)
     elif len(sys.argv) == 5:
         _, _, infile, target, fstype = sys.argv
         mount_options, fstype, encrypt, name = get_mount_options(fstype)
-        mount(infile, target, options=mount_options, name=name) or exit(1)
+        mount(infile, target, options=mount_options, name=name)
     else:
         print_usage_and_exit()
     print "mount ok"
@@ -181,8 +84,6 @@ def main():
             command_create()
         elif command == "convert":
             command_convert()
-        elif command == "convert2":
-            command_convert2()
         elif command == "mount":
             command_mount()
         else:
@@ -233,19 +134,6 @@ def print_usage_and_exit():
     print "         fsimg convert infile outfile outsize outfstype"
     print "         fsimg mount infile target [fstype]"
     exit(1)
-
-def show_du_df(x, stop=[True]):
-    if EXIT_FLAG or stop[0]:
-        return
-    run("df -h %s" % x)
-    run("btrfs filesystem df %s" % x)
-
-    threading.Timer(5, lambda : show_du_df(x, stop)).start()
-
-def generate_luks_name():
-    global MOUNT_NO
-    MOUNT_NO += 1
-    return "fsimg_%s_%s" % (os.getpid(), MOUNT_NO)
 
 def get_mount_options(outfstype):
     options = outfstype.split(",")
