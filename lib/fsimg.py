@@ -102,14 +102,12 @@ def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
     mount(infile, source, pwd=PWD)
 
     if outfile.startswith("/dev/"):
-        print "FIXME: convert to /dev incomplete"
-        raise_error()
-        # print "outfile startswith /dev/"
-        # stdout = sh << "blockdev --getsize64 %(outfile)s" > str
-        # outsize = "%s" % int(stdout)
-        # print "size changed to %s = sizeof(%s)" % (outsize, outfile)
-        # outfile_tmp = raw_input('write path for outfile_tmp:')
-        # print "tmpfile: %s" % outfile_tmp
+        print "outfile startswith /dev/"
+        stdout = sh << "blockdev --getsize64 %(outfile)s" > str
+        outsize = "%s" % int(stdout)
+        print "size changed to %s = sizeof(%s)" % (outsize, outfile)
+        outfile_tmp = raw_input('write path for outfile_tmp:')
+        print "tmpfile: %s" % outfile_tmp
     else:
         outfile_tmp="%s.tmp" % outfile
 
@@ -138,11 +136,13 @@ def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
         # run("umount %s" % source) or exit(1)
 
     if outfile.startswith("/dev/") and not outfile.startswith("/dev/shm/"):
-        print "FIXME: convert to /dev incomplete"
-        raise_error()
-        #print "copy to device"
-        #run("dd if=%s of=%s oflag=direct bs=64K" % (outfile_tmp, outfile))
-        # sh << "rm -f %(outfile_tmp)s" > None
+        answer = ""
+        while answer != "yes":
+            print "command : dd if=%s of=%s" % (outfile_tmp, outfile)
+            answer = raw_input('write yes for confirm: ')
+        print "copying to device"
+        sh << "dd if=%(outfile_tmp)s of=%(outfile)s oflag=direct bs=64K" > None
+        sh << "rm -f %(outfile_tmp)s" > None
     else:
         sh << "mv %(outfile_tmp)s %(outfile)s" > None
 
