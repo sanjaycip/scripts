@@ -92,14 +92,13 @@ def mount(img, d, pwd=None, options="-o ro", name=None):
 
 
 
-def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
-    # FIXME: other mount options (compress=lzo etc.)
+def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, inPWD=None, outPWD=None, out_mount_options=None):
     source = "%s/source" % TMP_FOLDER
     target = "%s/target" % TMP_FOLDER
 
     sh << "mkdir %(source)s %(target)s" > None
     sh.r == 0 or raise_error()
-    mount(infile, source, pwd=PWD)
+    mount(infile, source, pwd=inPWD)
 
     if outfile.startswith("/dev/"):
         print "outfile startswith /dev/"
@@ -112,9 +111,9 @@ def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD):
         outfile_tmp="%s.tmp" % outfile
 
     print "creating outfile"
-    create(outfile_tmp, outsize, outfstype, pwd=PWD)
-    print "mounting outfile"
-    mount(outfile_tmp, target, pwd=PWD, options="-o rw")
+    create(outfile_tmp, outsize, outfstype, pwd=outPWD)
+    print "mounting outfile (%s)" % out_mount_options
+    mount(outfile_tmp, target, pwd=outPWD, options=out_mount_options)
 
     print "copying files to new image"
     sh << "cd %(source)s; cp2 ./ %(target)s" > None

@@ -55,8 +55,9 @@ def command_convert():
     mount_options, outfstype, encrypt, _name = get_mount_options("rw,"+outfstype)
     PWD = None
     if encrypt:
+        print "enter password for new image"
         PWD = getPWD()
-    convert(TMP_FOLDER, infile, outfile, outsize, outfstype, PWD)
+    convert(TMP_FOLDER, infile, outfile, outsize, outfstype, outPWD=PWD, out_mount_options=mount_options)
 
 def command_mount():
     if len(sys.argv) == 4:
