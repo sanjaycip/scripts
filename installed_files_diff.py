@@ -14,18 +14,15 @@ for f in (
         "tmpmnt_archivemount", "umountlist", "xclips", "ssh-vpn.sh"):
     FILE_LIST["/usr/local/bin/%s" % f] = "scripts/bin/%s" % f
 
-
 for f in ("kvm_shared_fs.sh", "kvm_aufs_root.sh", "kvm_fsimg.sh"):
     FILE_LIST["/usr/local/bin/%s" % f] = "scripts/virtualization/%s" % f
 
 FILE_LIST["/usr/local/bin/run_docker.sh"] = "containers/docker/scripts/run_docker.sh"
+FILE_LIST["/usr/local/bin/virtual_x_screen.sh"] = "scripts/other/virtual_x_screen.sh"
 
 FILE_LIST["/usr/local/lib/taner/fsimg.py"] = "scripts/lib/fsimg.py"
 FILE_LIST["/usr/local/lib/taner/util.py"] = "scripts/lib/util.py"
 FILE_LIST["/usr/local/lib/taner/ipcsh.py"] = "python-ipcsh/ipcsh.py"
-
-FILE_LIST["/usr/local/bin/virtual_x_screen.sh"] = "scripts/other/virtual_x_screen.sh"
-
 
 if __name__ == '__main__':
     for k,v in FILE_LIST.iteritems():

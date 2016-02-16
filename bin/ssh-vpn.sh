@@ -8,7 +8,7 @@ SERVER_IP=$2
 [ "$ID_RSA" != "" ] || exit 1
 [ "$SERVER_IP" != "" ] || exit 1
 
-GW=`ip route get $SERVER_IP |  awk '{print $3}' | tr -d '\n'`
+GW=`ip route get 8.8.8.8 |  awk '{print $3}' | tr -d '\n'`
 echo "current gateway : $GW"
 
 clean() {
