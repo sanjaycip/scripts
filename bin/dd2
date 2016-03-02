@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# sigchld icin gerekli
+set -bm
+
+sigchld() {
+	wait $pid
+	exit $?
+}
+
+terminate_exit() {
+	kill -9 $pid;
+	exit 1
+}
+
+trap "terminate_exit" INT TERM
+trap "sigchld" SIGCHLD
+
+dd $@ &
+pid=$!
+
+echo "dd $@"
+echo "press enter for update progress information"
+
+while [ -d /proc/$pid ]; do
+	read -t 1
+	if [ "$?" == "0" ] ; then
+		kill -USR1 $pid &> /dev/null
+	fi
+done

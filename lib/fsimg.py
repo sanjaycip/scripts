@@ -8,7 +8,7 @@ from ipcsh import ipcsh as sh
 import util
 from util import exit_error, raise_error
 
-_DEPENDENCY_PROGRAMS_ = ("umountlist", "randomgen", "cryptsetup", "mkfs", "blkid", "cp2")
+_DEPENDENCY_PROGRAMS_ = ("dd2", "umountlist", "randomgen", "cryptsetup", "mkfs", "blkid", "cp2")
 util.check_command(*_DEPENDENCY_PROGRAMS_) or exit_error("check dependency programs")
 
 
@@ -105,8 +105,14 @@ def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, inPWD=None, outPWD=
         stdout = sh << "blockdev --getsize64 %(outfile)s" > str
         outsize = "%s" % int(stdout)
         print "size changed to %s = sizeof(%s)" % (outsize, outfile)
-        outfile_tmp = raw_input('write path for outfile_tmp:')
-        print "tmpfile: %s" % outfile_tmp
+
+        while True:
+            outfile_tmp = raw_input('write path for outfile_tmp:')
+            print "tmpfile: %s" % outfile_tmp
+            if os.path.exists(outfile_tmp):
+                print "file %s exist, try another file path"
+            else:
+                break
     else:
         outfile_tmp="%s.tmp" % outfile
 
@@ -137,10 +143,10 @@ def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, inPWD=None, outPWD=
     if outfile.startswith("/dev/") and not outfile.startswith("/dev/shm/"):
         answer = ""
         while answer != "yes":
-            print "command : dd if=%s of=%s" % (outfile_tmp, outfile)
-            answer = raw_input('write yes for confirm: ')
+            print "command : dd2 if=%s of=%s" % (outfile_tmp, outfile)
+            answer = raw_input('write yes for run this command: ')
         print "copying to device"
-        sh << "dd if=%(outfile_tmp)s of=%(outfile)s oflag=direct bs=64K" > None
+        sh << "dd2 if=%(outfile_tmp)s of=%(outfile)s oflag=direct bs=64K" > None
         sh << "rm -f %(outfile_tmp)s" > None
     else:
         sh << "mv %(outfile_tmp)s %(outfile)s" > None
