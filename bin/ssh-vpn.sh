@@ -4,7 +4,8 @@
 
 ID_RSA=$1
 SERVER_IP_OR_DOMAIN=$2
-SERVER_PORT=$3
+TUN_NO=$3
+SERVER_PORT=$4
 
 SERVER_IP=$(dig +short $SERVER_IP_OR_DOMAIN | head -n 1 | tr -d '\n')
 if [ "$SERVER_IP" == "" ]; then
@@ -15,10 +16,17 @@ if [ "$SERVER_PORT" == "" ]; then
 	SERVER_PORT=22
 fi
 
-echo "[CLIENT] ssh-server: $SERVER_IP:$SERVER_PORT"
-
 [ "$ID_RSA" != "" ] || exit 1
 [ "$SERVER_IP" != "" ] || exit 1
+
+IP_3=$((200 + $TUN_NO))
+CLIENT_TUN=$TUN_NO
+CLIENT_TUN_IP=192.168.${IP_3}.2
+SERVER_TUN=$TUN_NO
+SERVER_TUN_IP=192.168.${IP_3}.1
+NETMASK=255.255.255.0
+
+echo "[CLIENT] ssh-server: $SERVER_IP:$SERVER_PORT"
 
 get_gateway() {
 	ip route get 8.8.8.8 | head -n 1 | awk '{print $3}' | tr -d '\n'
@@ -39,11 +47,6 @@ clean_exit() {
 	echo "[CLIENT] clean ok"
 }
 
-CLIENT_TUN=5
-CLIENT_TUN_IP=192.168.244.2
-SERVER_TUN=5
-SERVER_TUN_IP=192.168.244.1
-NETMASK=255.255.255.0
 
 trap "clean_exit" SIGTERM EXIT SIGKILL
 
@@ -53,7 +56,7 @@ ssh -i $ID_RSA \
 	-o PermitLocalCommand=yes \
 	-o LocalCommand='\
 		ifconfig tun'$CLIENT_TUN' '$CLIENT_TUN_IP' pointopoint '$SERVER_TUN_IP' netmask '$NETMASK'; \
-		ip route replace default via '$CLIENT_TUN_IP'; \
+		ip route replace default via '$SERVER_TUN_IP'; \
 		echo "[CLIENT] tun'$CLIENT_TUN': '$CLIENT_TUN_IP'" ; \
 		GATEWAY=$(ip route get 8.8.8.8 | head -n 1 | awk '"'"'{print $3}'"'"' | tr -d '"'"'\n'"'"') ; \
 		echo "[CLIENT] gateway: $GATEWAY" ; \
