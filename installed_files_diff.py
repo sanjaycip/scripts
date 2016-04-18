@@ -9,7 +9,7 @@ GIT_DIR=os.path.abspath(sys.argv[1])
 FILE_LIST={}
 
 for f in (
-        "cp2", "cprsync", "dd2", "em", "firefox", "fsimg", "randomgen", "randompass",
+        "cp2", "cprsync", "dd2", "em", "firefox", "fsimg", "iceweasel", "randomgen", "randompass",
         "run_with_aufs_ram_cache", "run_with_ram_cache", "tmpclean.sh", "tmpfs_compressed.py",
         "tmpmnt_archivemount", "umountlist", "xclips", "ssh-vpn.sh"):
     FILE_LIST["/usr/local/bin/%s" % f] = "scripts/bin/%s" % f

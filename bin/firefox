@@ -1,2 +1,2 @@
 #!/bin/sh
-run_with_aufs_ram_cache /usr/bin/iceweasel ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*" "$@"
+run_with_aufs_ram_cache /usr/bin/firefox ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*" "$@"
