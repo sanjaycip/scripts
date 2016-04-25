@@ -12,14 +12,14 @@ fi
 FS_ROOT=$1
 #KVM_KERNEL_PARAMETERS
 
-TMP_DIR=/dev/shm/kvm_aufs_root/$$
-CACHE_DIR=$TMP_DIR/root-aufs-cache
-KVM_ROOT_DIR=$TMP_DIR/root-aufs
+TMP_DIR=/dev/shm/kvm_unionmount_root/$$
+CACHE_DIR=$TMP_DIR/root-unionmount-cache
+KVM_ROOT_DIR=$TMP_DIR/root-unionmount
 
 cleanup() {
-	umount $TMP_DIR/root-aufs
-	umount $TMP_DIR/root-aufs-cache
-	rmdir $TMP_DIR/root-aufs $TMP_DIR/root-aufs-cache
+	umount $TMP_DIR/root-unionmount
+	umount $TMP_DIR/root-unionmount-cache
+	rmdir $TMP_DIR/root-unionmount $TMP_DIR/root-unionmount-cache
 	rmdir $TMP_DIR
 	echo "cleanup ok"
 }
@@ -27,8 +27,8 @@ cleanup() {
 run() {
 	mkdir -p $TMP_DIR $KVM_ROOT_DIR $CACHE_DIR
 	mount -t tmpfs tmpfs $CACHE_DIR -o size=512M
-	mount -t aufs -o br=$CACHE_DIR=rw:$FS_ROOT=ro -o udba=reval none $KVM_ROOT_DIR
 
+	unionmount.sh $FS_ROOT $CACHE_DIR $KVM_ROOT_DIR
 	rm -f $KVM_ROOT_DIR/etc/fstab $KVM_ROOT_DIR/etc/crypttab
 
 	KVM_MEMORY=$KVM_MEMORY KVM_KERNEL_PARAMETERS=$KVM_KERNEL_PARAMETERS kvm_shared_fs.sh $KVM_ROOT_DIR

@@ -1,2 +1,26 @@
 #!/bin/sh
-run_with_aufs_ram_cache /usr/bin/firefox ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*" "$@"
+
+if mountpoint /ramcache-unionmount ; then
+	OLD_HOME=$HOME
+	NEW_HOME=/ramcache-unionmount/$HOME
+
+	# run
+	export HOME=$NEW_HOME
+	/usr/bin/firefox "$@"
+
+	echo
+	echo "firefox exit code $?"
+
+	# sync files
+	CPRSYNC="rsync --delete -ax --progress --stats -h --inplace --checksum --no-whole-file"
+	EXCLUDE_PATTERN="*/firefox/*.default/adblockplus/elemhide.css*"
+	for file in $EXCLUDE_PATTERN
+	do
+	    echo "rm $CACHE_DIR $file"
+	    find $NEW_HOME/.mozilla -path "$file" -exec rm -f {} \;
+	done
+	$CPRSYNC $NEW_HOME/.mozilla/ $OLD_HOME/.mozilla/
+
+else
+	run_with_ram_cache /usr/bin/firefox ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*" "$@"
+fi

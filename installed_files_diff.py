@@ -10,11 +10,11 @@ FILE_LIST={}
 
 for f in (
         "cp2", "cprsync", "dd2", "em", "firefox", "fsimg", "iceweasel", "randomgen", "randompass",
-        "run_with_aufs_ram_cache", "run_with_ram_cache", "tmpclean.sh", "tmpfs_compressed.py",
-        "tmpmnt_archivemount", "umountlist", "xclips", "ssh-vpn.sh"):
+        "run_with_ram_cache", "tmpclean.sh", "tmpfs_compressed.py",
+        "tmpmnt_archivemount", "umountlist", "unionmount.sh", "xclips", "ssh-vpn.sh"):
     FILE_LIST["/usr/local/bin/%s" % f] = "scripts/bin/%s" % f
 
-for f in ("kvm_shared_fs.sh", "kvm_aufs_root.sh", "kvm_fsimg.sh"):
+for f in ("kvm_shared_fs.sh", "kvm_unionmount_root.sh", "kvm_fsimg.sh"):
     FILE_LIST["/usr/local/bin/%s" % f] = "scripts/virtualization/%s" % f
 
 FILE_LIST["/usr/local/bin/run_docker.sh"] = "containers/docker/scripts/run_docker.sh"
