@@ -34,9 +34,10 @@ get_interface() {
 convert_domain_to_ip() {
 	if which dig &> /dev/null; then
 		SERVER_IP=$(dig +short $SERVER_IP_OR_DOMAIN | head -n 1 | tr -d '\n')
-		echo $SERVER_IP
 		if [ "$SERVER_IP" == "" ]; then
 			echo $SERVER_IP_OR_DOMAIN
+		else
+			echo $SERVER_IP
 		fi
 	else
 		echo $SERVER_IP_OR_DOMAIN
