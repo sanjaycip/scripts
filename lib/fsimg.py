@@ -8,7 +8,7 @@ from ipcsh import ipcsh as sh
 import util
 from util import exit_error, raise_error
 
-_DEPENDENCY_PROGRAMS_ = ("dd2", "umountlist", "randomgen", "cryptsetup", "mkfs", "blkid", "cp2")
+_DEPENDENCY_PROGRAMS_ = ("dd2", "umountlist", "randomgen", "cryptsetup", "mkfs", "blkid", "cp2", "pv")
 util.check_command(*_DEPENDENCY_PROGRAMS_) or exit_error("check dependency programs")
 
 
@@ -82,6 +82,8 @@ def mount(img, d, pwd=None, options="-o ro", name=None):
         else:
             LUKS_NAME = name
         sh.stdin(pwd) << "cryptsetup luksOpen %(img)s %(LUKS_NAME)s" > None
+        if sh.r != 0:
+            raise Exception("")
         img = "/dev/mapper/%s" % LUKS_NAME
 
     sh << "mount %(options)s %(img)s %(d)s" > None

@@ -1,4 +1,10 @@
-#!/bin/sh
+#!/bin/bash
+
+if [ "$FIREFOX" == "" ]; then
+	FIREFOX=/usr/bin/firefox.real
+else
+	echo "firefox executable : $FIREFOX"
+fi
 
 if mountpoint /ramcache-unionmount ; then
 	OLD_HOME=$HOME
@@ -6,7 +12,7 @@ if mountpoint /ramcache-unionmount ; then
 
 	# run
 	export HOME=$NEW_HOME
-	/usr/bin/firefox "$@"
+	$FIREFOX "$@"
 
 	echo
 	echo "firefox exit code $?"
@@ -22,5 +28,5 @@ if mountpoint /ramcache-unionmount ; then
 	$CPRSYNC $NEW_HOME/.mozilla/ $OLD_HOME/.mozilla/
 
 else
-	run_with_ram_cache /usr/bin/firefox ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*" "$@"
+	run_with_ram_cache $FIREFOX ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*" "$@"
 fi

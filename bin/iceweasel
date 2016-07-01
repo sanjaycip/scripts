@@ -1,2 +1,4 @@
-#!/bin/sh
-run_with_aufs_ram_cache /usr/bin/iceweasel ~/.mozilla "*/firefox/*.default/adblockplus/elemhide.css*" "$@"
+#!/bin/bash
+
+export FIREFOX=/usr/bin/iceweasel
+exec /usr/local/bin/firefox

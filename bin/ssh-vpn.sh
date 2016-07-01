@@ -55,6 +55,7 @@ is_android() {
 clean_exit() {
 	answer=""
 	while [ "$answer" != "exit" ]; do
+		sleep 0.1
 		echo -n "write 'exit' for clean exit: "
 		read answer
 	done
@@ -85,15 +86,19 @@ run() {
 		SERVER_PORT=22
 	fi
 
-	SERVER_IP=$(convert_domain_to_ip $SERVER_IP_OR_DOMAIN)
-
-	if ! validate_ip ${SERVER_IP} ; then
-		echo "server parameter : ${SERVER_IP_OR_DOMAIN}"
-		echo "SERVER_IP error : ${SERVER_IP}"
-		echo "check default gateway"
-		echo "check DNS configuration if server parameter is domain name"
-		exit 1
+	if validate_ip ${SERVER_IP_OR_DOMAIN}; then
+		SERVER_IP=$SERVER_IP_OR_DOMAIN
+	else
+		SERVER_IP=$(convert_domain_to_ip $SERVER_IP_OR_DOMAIN)
+		if ! validate_ip ${SERVER_IP} ; then
+			echo "server parameter : ${SERVER_IP_OR_DOMAIN}"
+			echo "SERVER_IP error : ${SERVER_IP}"
+			echo "check default gateway"
+			echo "check DNS configuration if server parameter is domain name"
+			exit 1
+		fi
 	fi
+
 
 	# tunnel device IP configuration
 	IP_3=$((200 + $TUN_NO))

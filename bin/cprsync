@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # -a : archive -rlptgoD
 # -A : preserve acl
@@ -9,7 +9,7 @@
 # -R : relative
 # -h : human readable
 
-rsync -aAXH -xRh --progress "$1" "$2"
+exec rsync -aAXH -xRh --progress ${@:3} "$1" "$2"
 
 # -r : recursive
 # -l : links
