@@ -8,6 +8,12 @@ if [ "$1" == "--help" ] || [ "$1" == "" ]; then
 	exit
 fi
 
+#env SERVER_SCRIPT=local|remote|path
+
+if [ "$SERVER_SCRIPT" == "" ]; then
+	SERVER_SCRIPT=local
+fi
+
 ID_RSA=$1
 SERVER_IP_OR_DOMAIN=$2
 TUN_NO=$3
@@ -23,8 +29,14 @@ validate_ip() {
 	fi
 }
 
+# FIXME: get_gateway ve get_interface fonksiyonlarina duzgun bir cozum bulunmali
 get_gateway() {
-	ip route get 8.8.8.8 | head -n 1 | awk '{print $3}' | tr -d '\n'
+	a=`ip route get 8.8.8.8 | grep via | wc -l`
+	if [ "$a" == "0" ]; then
+		ip route get 8.8.8.8 | head -n 1 | awk '{print $(NF-0)}' | tr -d '\n'
+	else
+		ip route get 8.8.8.8 | head -n 1 | awk '{print $3}' | tr -d '\n'
+	fi
 }
 
 get_interface() {
@@ -163,16 +175,23 @@ run() {
 		echo "[CLIENT] dns: '$DNS'" ; \
 		'
 
-	REMOTE_COMMAND='ifconfig tun'$SERVER_TUN' '$SERVER_TUN_IP' pointopoint '$CLIENT_TUN_IP' netmask '$NETMASK'; \
-		echo "[SERVER] tun'$SERVER_TUN': '$SERVER_TUN_IP'"; \
-		\
-		INTERNET_INTERFACE=$(ip route get 8.8.8.8 | head -n 1 | awk '"'"'{print $5}'"'"' | tr -d '"'"'\n'"'"') ; \
-		echo "[SERVER] internet interface: $INTERNET_INTERFACE" ; \
-		\
-		echo 1 > /proc/sys/net/ipv4/ip_forward; \
-		iptables -t nat -A POSTROUTING -o $INTERNET_INTERFACE -j MASQUERADE; \
-		echo "[SERVER] internet sharing ready"; \
+	echo "[CLIENT] SERVER_SCRIPT : $SERVER_SCRIPT"
+	if [ "$SERVER_SCRIPT" == "local" ]; then
+		REMOTE_COMMAND='ifconfig tun'$SERVER_TUN' '$SERVER_TUN_IP' pointopoint '$CLIENT_TUN_IP' netmask '$NETMASK'; \
+			echo "[SERVER] tun'$SERVER_TUN': '$SERVER_TUN_IP'"; \
+			\
+			INTERNET_INTERFACE=$(ip route get 8.8.8.8 | head -n 1 | awk '"'"'{print $5}'"'"' | tr -d '"'"'\n'"'"') ; \
+			echo "[SERVER] internet interface: $INTERNET_INTERFACE" ; \
+			\
+			echo 1 > /proc/sys/net/ipv4/ip_forward; \
+			iptables -t nat -A POSTROUTING -o $INTERNET_INTERFACE -j MASQUERADE; \
+			echo "[SERVER] internet sharing ready"; \
 		'
+	elif [ "$SERVER_SCRIPT" == "remote" ]; then
+		REMOTE_COMMAND='sshvpn_server.sh '$SERVER_TUN' '$SERVER_TUN_IP' '$CLIENT_TUN_IP' '$NETMASK' '
+	else
+		REMOTE_COMMAND=$SERVER_SCRIPT
+	fi
 
 	if [ $ID_RSA == "--pwd" ]; then
 		SSH_COMMAND="ssh"
