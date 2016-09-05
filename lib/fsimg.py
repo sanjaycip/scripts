@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-import sys, os
+import sys, os, stat
 
 sys.path.append("/usr/local/lib/taner")
 import ipcsh
@@ -40,12 +40,18 @@ def create(filepath, size, fstype, pwd=None):
         raise Exception("unknown size suffix. use K, M or G")
 
     if os.path.exists(filepath):
-        sh << "rm -f %(filepath)s" > None
-        if sh.r != 0:
-            raise Exception("")
+        if stat.S_ISBLK(os.stat(filepath).st_mode):
+            print "outfile is block device: %s" % filepath
+            stdout = sh << "blockdev --getsize64 %(filepath)s" > str
+            size = "%s" % int(stdout)
+            print "size changed to %s = sizeof(%s)" % (size, filepath)
+        else:
+            sh << "rm -f %(filepath)s" > None
+            if sh.r != 0:
+                raise Exception("")
 
     if pwd:
-        sh.stdin("") << "randomgen %(size)s > %(filepath)s" > None
+        sh.stdin("") << "randomgen %(size)s | pv -s %(size)s > %(filepath)s" > None
         if sh.r != 0:
             raise Exception("")
 
