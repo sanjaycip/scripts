@@ -117,7 +117,9 @@ def convert(TMP_FOLDER, infile, outfile, outsize, outfstype, inPWD=None, outPWD=
         while True:
             outfile_tmp = raw_input('write path for outfile_tmp:')
             print "tmpfile: %s" % outfile_tmp
-            if os.path.exists(outfile_tmp):
+            if outfile_tmp == "":
+                print "ERROR: file path empty"
+            elif os.path.exists(outfile_tmp):
                 print "file %s exist, try another file path"
             else:
                 break
