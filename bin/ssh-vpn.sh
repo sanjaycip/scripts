@@ -18,6 +18,10 @@ fi
 ID_RSA=$1
 SERVER_IP_OR_DOMAIN=$2
 SERVER_PORT=$3
+IP_1=192
+IP_2=168
+IP_3=189
+# IP_4 -> server,client 1,2 - 3,4 - 5,6 ... seklinde otomatik hesaplaniyor
 
 TUN_NO=0 # hata verirse otomatik arttiriyor
 
@@ -195,12 +199,13 @@ config() {
 
 connect() {
 	# tunnel device IP configuration
-	IP_3=$((10 + $TUN_NO))
-	CLIENT_TUN=$TUN_NO
-	CLIENT_TUN_IP=192.168.${IP_3}.2
-	SERVER_TUN=$TUN_NO
-	SERVER_TUN_IP=192.168.${IP_3}.1
-	NETMASK=255.255.255.0
+	IP_4_SERVER=$((2 * $TUN_NO - 1))
+	IP_4_CLIENT=$((2 * $TUN_NO))
+	CLIENT_TUN=${TUN_NO}
+	CLIENT_TUN_IP=${IP_1}.${IP_2}.${IP_3}.${IP_4_CLIENT}
+	SERVER_TUN=${TUN_NO}
+	SERVER_TUN_IP=${IP_1}.${IP_2}.${IP_3}.${IP_4_SERVER}
+	NETMASK=255.255.255.254
 
 	if is_android ; then
 		echo "[CLIENT] Android System"
@@ -304,7 +309,7 @@ connect() {
 config
 
 while true; do
-	((TUN_NO=(TUN_NO%200)+1))
+	((TUN_NO=(TUN_NO%120)+1))
 	echo "TUN_NO: $TUN_NO"
 
 	connect
